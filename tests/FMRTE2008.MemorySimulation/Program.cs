@@ -102,7 +102,8 @@ await Test("rejeita sobreposição de regiões", () =>
     ThrowsSync<InvalidOperationException>(() => mem.AddRegion(0x1004, new byte[8]));
     return Task.CompletedTask;
 });
-Console.WriteLine($"PASSARAM: {passed} testes de simulação (sem processo real).");
+BuildRecognitionTests.Run();
+Console.WriteLine($"PASSARAM: {passed} testes de simulação + 4 testes de identidade (sem processo real).");
 
 async Task Test(string name, Func<Task> action)
 {
