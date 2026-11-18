@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../FMRTE2008.Application/FMRTE2008.Application.csproj" />
+    <ProjectReference Include="../FMRTE2008.Infrastructure.Windows/FMRTE2008.Infrastructure.Windows.csproj" />
+  </ItemGroup>
+</Project>
