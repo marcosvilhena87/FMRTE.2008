@@ -1,11 +1,19 @@
 <Window x:Class="FMRTE2008.Desktop.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="FMRTE2008 — Protótipo" Height="300" Width="560">
+        Title="FMRTE2008 — Identificação segura" Height="360" Width="680"
+        MinHeight="280" MinWidth="540">
   <StackPanel Margin="24">
     <TextBlock FontSize="23" FontWeight="SemiBold" Text="FMRTE2008"/>
-    <TextBlock Margin="0,12,0,0" TextWrapping="Wrap"
-               Text="Estrutura inicial. Conexão ao jogo e edição de memória indisponíveis nesta versão."/>
-    <TextBlock Margin="0,12,0,0" Text="Estado: desconectado (modo seguro)"/>
+    <TextBlock Margin="0,10,0,10" TextWrapping="Wrap"
+               Text="Identifique o executável do FM2008 sem iniciar o jogo ou ler memória."/>
+    <Button Name="SelectExeButton" Width="220" Height="38"
+            HorizontalAlignment="Left" Content="Selecionar fm.exe"
+            Click="SelectExeButton_Click"/>
+    <TextBlock Margin="0,14,0,0" FontWeight="SemiBold" Text="Identificação"/>
+    <TextBlock Name="IdentityText" Margin="0,7,0,0" TextWrapping="Wrap"
+               Text="Nenhum executável selecionado."/>
+    <TextBlock Margin="0,15,0,0" TextWrapping="Wrap" FontWeight="SemiBold"
+               Text="Modo seguro: leitura e edição de memória desabilitadas."/>
   </StackPanel>
 </Window>
