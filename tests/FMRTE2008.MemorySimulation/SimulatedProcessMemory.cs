@@ -6,7 +6,7 @@ namespace FMRTE2008.MemorySimulation;
 internal sealed class SimulatedProcessMemory : IProcessReader
 {
     private readonly Dictionary<uint, byte> _bytes = new();
-    private readonly List<(uint Start, uint End)> _regions = new();
+    private readonly List<(ulong Start, ulong End)> _regions = new();
 
     public void AddRegion(uint start, byte[] bytes)
     {
@@ -18,7 +18,7 @@ internal sealed class SimulatedProcessMemory : IProcessReader
             throw new OverflowException("Região excede espaço de 32 bits");
         if (_regions.Any(r => (ulong)start < r.End && (ulong)r.Start < end))
             throw new InvalidOperationException("Regiões sobrepostas");
-        _regions.Add((start, (uint)Math.Min(end, uint.MaxValue)));
+        _regions.Add((start, end));
         for (int i = 0; i < bytes.Length; i++)
             _bytes.Add(start + (uint)i, bytes[i]);
     }
