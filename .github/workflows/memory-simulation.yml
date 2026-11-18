@@ -1,0 +1,14 @@
+name: Simulacao de memoria x86
+on:
+  push:
+  pull_request:
+jobs:
+  memory-simulation:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compilar e executar testes com memoria simulada
+        run: dotnet run --project tests/FMRTE2008.MemorySimulation/FMRTE2008.MemorySimulation.csproj --configuration Release
