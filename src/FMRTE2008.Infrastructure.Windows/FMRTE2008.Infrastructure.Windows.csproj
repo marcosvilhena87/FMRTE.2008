@@ -6,5 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../FMRTE2008.Domain/FMRTE2008.Domain.csproj" />
+    <ProjectReference Include="../FMRTE2008.Application/FMRTE2008.Application.csproj" />
   </ItemGroup>
 </Project>
