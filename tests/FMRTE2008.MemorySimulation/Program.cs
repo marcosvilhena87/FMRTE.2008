@@ -58,14 +58,14 @@ await Test("ponteiro de jogador nulo", async () =>
     mem.AddRegion(0x1000, Header(0x2000, 1));
     mem.AddRegion(0x2000, UInt(0));
     var reader = new PlayerListReader(mem);
-    await Throws<InvalidDataException>(() => reader.ReadPlayerIdAsync(
+    await Throws<InvalidDataException>(async () => await reader.ReadPlayerIdAsync(
         await reader.ReadHeaderAsync(0x1000), 0, 256));
 });
 await Test("endereço do ID fora da memória", async () =>
 {
     var (mem, hdr) = MakeFixture();
     var reader = new PlayerListReader(mem);
-    await Throws<InvalidDataException>(() => reader.ReadPlayerIdAsync(
+    await Throws<InvalidDataException>(async () => await reader.ReadPlayerIdAsync(
         await reader.ReadHeaderAsync(hdr), 0, 300));
 });
 await Test("overflow x86 ao calcular o ID", async () =>
@@ -74,7 +74,7 @@ await Test("overflow x86 ao calcular o ID", async () =>
     mem.AddRegion(0x1000, Header(0x2000, 1));
     mem.AddRegion(0x2000, UInt(0xFFFFFFFE));
     var reader = new PlayerListReader(mem);
-    await Throws<OverflowException>(() => reader.ReadPlayerIdAsync(
+    await Throws<OverflowException>(async () => await reader.ReadPlayerIdAsync(
         await reader.ReadHeaderAsync(0x1000), 0, 256));
 });
 await Test("header com overflow da tabela", async () =>
