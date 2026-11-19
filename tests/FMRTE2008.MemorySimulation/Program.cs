@@ -103,7 +103,8 @@ await Test("rejeita sobreposição de regiões", () =>
     return Task.CompletedTask;
 });
 BuildRecognitionTests.Run();
-Console.WriteLine($"PASSARAM: {passed} testes de simulação + 4 testes de identidade (sem processo real).");
+await VerifiedSessionTests.RunAsync();
+Console.WriteLine($"PASSARAM: {passed} testes de simulação + 4 testes de identidade + 6 de sessão (sem processo real).");
 
 async Task Test(string name, Func<Task> action)
 {
