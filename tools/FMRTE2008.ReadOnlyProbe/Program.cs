@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 using FMRTE2008.Application;
 using FMRTE2008.Infrastructure.Windows;
@@ -12,21 +13,30 @@ if (!OperatingSystem.IsWindows() || args.Length < 3 ||
     args[0] != "--pid" || !int.TryParse(args[1], out int pid) || pid <= 0 ||
     args[2] != "--confirm-read-only")
 {
-    Console.Error.WriteLine("Uso: --pid <PID> --confirm-read-only [--first 1..20] [--repeat 1..10]");
+    Console.Error.WriteLine("Uso: --pid <PID> --confirm-read-only [--first 1..20] [--repeat 1..10] [--names]");
     return 2;
 }
 int firstCount = 1;
 int repeatCount = 1;
-bool seenFirst = false, seenRepeat = false;
-bool validArgs = (args.Length - 3) % 2 == 0;
-for (int i = 3; validArgs && i < args.Length; i += 2)
+bool seenFirst = false, seenRepeat = false, namesRequested = false;
+bool validArgs = true;
+for (int i = 3; validArgs && i < args.Length;)
 {
+    if (args[i] == "--names")
+    {
+        if (namesRequested) { validArgs = false; break; }
+        namesRequested = true;
+        i++;
+        continue;
+    }
     if (i + 1 >= args.Length || !int.TryParse(args[i + 1], out int value))
     {
         validArgs = false;
         break;
     }
-    switch (args[i])
+    string option = args[i];
+    i += 2;
+    switch (option)
     {
         case "--first" when !seenFirst && value is >= 1 and <= 20:
             firstCount = value;
@@ -43,7 +53,7 @@ for (int i = 3; validArgs && i < args.Length; i += 2)
 }
 if (!validArgs)
 {
-    Console.Error.WriteLine("Parâmetros inválidos. Uso: --pid <PID> --confirm-read-only [--first 1..20] [--repeat 1..10]");
+    Console.Error.WriteLine("Parâmetros inválidos. Uso: --pid <PID> --confirm-read-only [--first 1..20] [--repeat 1..10] [--names]");
     return 2;
 }
 
@@ -86,7 +96,7 @@ try
 
     Console.WriteLine($"ModuleBase=0x{moduleBase:X8}; HeaderRVA=0x{headerRva:X8}; HeaderVA=0x{headerAddress:X8}");
     Console.WriteLine($"Amostragem solicitada: primeiros {firstCount} registros, {repeatCount} leitura(s).");
-    List<(uint Table, int Count, List<(uint Pointer, int Id)> Records)> samples = new();
+    List<(uint Table, int Count, List<(uint Pointer, int Id, string First, string Last, string Common)> Records)> samples = new();
 
     for (int sampleIndex = 0; sampleIndex < repeatCount; sampleIndex++)
     {
@@ -102,7 +112,7 @@ try
         if (lastEntryEnd > (ulong)uint.MaxValue + 1)
             throw new InvalidDataException("Tabela excede o espaço x86");
 
-        var records = new List<(uint Pointer, int Id)>();
+        var records = new List<(uint Pointer, int Id, string First, string Last, string Common)>();
         for (int index = 0; index < firstCount; index++)
         {
             ulong slot = checked((ulong)tablePtr + (ulong)index * 4ul);
@@ -113,8 +123,18 @@ try
                 ReadExact(handle, (ulong)playerPtr + playerIdOffset, 4));
             if (playerId <= 0)
                 throw new InvalidDataException($"ID não positivo no índice {index}");
-            records.Add((playerPtr, playerId));
+            string firstName = "", lastName = "", commonName = "";
+            if (namesRequested)
+            {
+                // Segue o percurso observado em Players.get*NameAtIndex -> getNameAtPtr.
+                firstName = ReadLegacyName(handle, playerPtr, 280);
+                lastName = ReadLegacyName(handle, playerPtr, 284);
+                commonName = ReadLegacyName(handle, playerPtr, 288);
+            }
+            records.Add((playerPtr, playerId, firstName, lastName, commonName));
             Console.WriteLine($"  [{index}] ponteiro=0x{playerPtr:X8}; id={playerId}");
+            if (namesRequested)
+                Console.WriteLine($"      primeiro='{firstName}' | sobrenome='{lastName}' | comum='{commonName}'");
         }
         samples.Add((tablePtr, count, records));
     }
@@ -136,6 +156,34 @@ catch (Exception error) when (error is Win32Exception or IOException or InvalidO
     Console.Error.WriteLine($"BLOQUEADO / NÃO VALIDADO: {error.Message}");
     return 1;
 }
+
+// Percurso verificado no FMRTE original:
+//  ReadU32(player+fieldOffset) -> p
+//  ReadU32(p+36) -> q
+//  ReadU32(q+8) -> texto UTF-16LE terminado em \0\0.
+// Rejeita leituras fora do espaço x86 e limita texto a 96 unidades UTF-16.
+static string ReadLegacyName(SafeProcessHandle handle, uint playerPointer, uint fieldOffset)
+{
+    uint nameObject = ReadPointer(handle, checked((ulong)playerPointer + fieldOffset));
+    if (nameObject == 0) return "<ausente>";
+    uint innerObject = ReadPointer(handle, checked((ulong)nameObject + 36ul));
+    if (innerObject == 0) return "<ausente>";
+    uint utf16Ptr = ReadPointer(handle, checked((ulong)innerObject + 8ul));
+    if (utf16Ptr == 0) return "<ausente>";
+    var bytes = new byte[192];
+    for (int i = 0; i < 96; i++)
+    {
+        var pair = ReadExact(handle, checked((ulong)utf16Ptr + (ulong)i * 2ul), 2);
+        if (pair[0] == 0 && pair[1] == 0)
+            return Encoding.Unicode.GetString(bytes, 0, i * 2);
+        bytes[2 * i] = pair[0];
+        bytes[2 * i + 1] = pair[1];
+    }
+    throw new InvalidDataException("Nome ultrapassou o limite de 96 unidades UTF-16");
+}
+
+static uint ReadPointer(SafeProcessHandle handle, ulong address) =>
+    BinaryPrimitives.ReadUInt32LittleEndian(ReadExact(handle, address, 4));
 
 static byte[] ReadExact(SafeProcessHandle process, ulong address, int length)
 {
