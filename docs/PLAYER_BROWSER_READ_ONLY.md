@@ -42,3 +42,18 @@ A classe `VerifiedPlayerReadSession` agora expõe `ReadIdentityPageAsync(pageNum
 - A busca global por nome/ID em uma fonte real ainda não existe. A pesquisa atual continua limitada à demonstração, pois a fonte aprovada futura exigirá uma estratégia incremental de busca (sem leitura ilimitada de todos os jogadores).
 
 **Pendências de aprovação:** confrontar IDs no jogo com outra fonte, revisar gerenciamento de ciclo de vida de sessão, revalidar endereço base/ASLR no conector do Windows, testar falhas de leitura em páginas reais, revisar política de aprovação e então integrar explicitamente a tela com uma fonte paginada. Nenhuma dessas pendências é automaticamente resolvida pelos testes de fixture.
+
+
+## Pesquisa incremental e tratamento de falhas (etapa experimental)
+
+A classe `IncrementalPlayerSearch` implementa uma pesquisa retomável sobre `IIndexedPlayerSource`, com cursor `NextIndex`, lote limitado a **100 registros** e resultados parciais. `DemonstrationIndexedPlayerSource` fornece dados demonstrativos para uso em testes, sem processo real.
+
+- A consulta recebe termo, índice inicial e tamanho do lote; devolve encontrados, falhas por índice, posição seguinte, contagem e sinal de conclusão.
+- Busca por ID exato ou nomes com comparação sem diferenciação de maiúsculas e diacríticos.
+- Erros locais de decodificação (`InvalidDataException`, `OverflowException` e `ArgumentOutOfRangeException`) são relatados como falhas do respectivo registro e o lote continua.
+- Erros de leitura do processo (`IOException`, `Win32Exception`), descarte da sessão (`ObjectDisposedException`) ou cancelamento **não** são ignorados: a busca aborta e seu chamador deve descartar a sessão.
+- Fontes com `IsLiveProcessSource == true` são rejeitadas antes de qualquer tentativa de leitura.
+- Uma chamada processa apenas seu lote; a pesquisa global exige chamadas repetidas do cliente, sem construir previamente uma lista de milhares de jogadores.
+- A janela WPF existente continua usando `PlayerQueryService` com uma lista fixa de demonstração; a pesquisa incremental está **no núcleo**, ainda não conectada à interface.
+
+`IncrementalSearchTests` cobre cursor, limites, busca por ID/nome/acento, falha de registro, interrupção em falhas de processo e fonte real proibida. Nenhum teste usa processos externos.
