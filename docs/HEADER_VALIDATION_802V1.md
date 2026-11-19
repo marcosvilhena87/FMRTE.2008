@@ -35,3 +35,25 @@ Substituir `1234` pelo PID real. O programa solicita somente permissões de leit
 - `NoApprovedPlayerMaps` continua como único catálogo de produção e sempre bloqueia sessão real.
 - A identidade do arquivo em disco e seu hash não comprovam ausência de patching de memória em tempo de execução.
 - O teste não substitui inspeção de múltiplos elementos, cruzamento com IDs e revisão independente.
+
+
+## Leitura múltipla (.NET 10)
+
+Todos os projetos e workflows foram migrados para `net10.0` / `net10.0-windows`. No Windows com SDK .NET 10, atualize o checkout do repositório:
+
+```powershell
+git pull --ff-only
+dotnet --version
+dotnet build .\tools\FMRTE2008.ReadOnlyProbe\FMRTE2008.ReadOnlyProbe.csproj -c Release
+$fm = Get-Process fm -ErrorAction Stop
+dotnet run --no-build --project .\tools\FMRTE2008.ReadOnlyProbe\FMRTE2008.ReadOnlyProbe.csproj -c Release -- --pid $fm.Id --confirm-read-only --first 5 --repeat 2
+```
+
+- `--first`: 1 a 20; padrão 1
+- `--repeat`: 1 a 10; padrão 1
+- Máximo 200 registros consultados por diagnóstico.
+- Por amostra, relê o cabeçalho, os N ponteiros e os respectivos IDs. Comparação envolve tabela, quantidade, ponteiros e IDs, sem disparar qualquer escrita.
+- Quando existe só uma amostra, a estabilidade **não** foi avaliada.
+- Duas amostras idênticas na mesma partida **não** equivalem a validar o mapa em saves independentes.
+- Mudanças de memória entre leituras podem ser normais; se houver divergência, investigar sem promover mapa.
+- Endereços concretos são candidatos extraídos do IL legado e utilizados **exclusivamente pelo probe experimental**, não pela aplicação de produção.
