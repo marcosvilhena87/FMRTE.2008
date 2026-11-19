@@ -133,7 +133,7 @@ try
         if (lastEntryEnd > (ulong)uint.MaxValue + 1)
             throw new InvalidDataException("Tabela excede o espaço x86");
 
-        int[] indices = seenDistributed ? DistributedIndices(count, distributedCount)
+        int[] indices = seenDistributed ? DistributedPlayerSampling.BuildIndices(count, distributedCount)
             : Enumerable.Range(0, firstCount).ToArray();
         Console.WriteLine("Índices fixados nesta amostra: " + string.Join(",", indices));
         var records = new List<(uint Pointer, int Id, string First, string Last, string Common)>();
@@ -179,17 +179,6 @@ catch (Exception error) when (error is Win32Exception or IOException or InvalidO
 {
     Console.Error.WriteLine($"BLOQUEADO / NÃO VALIDADO: {error.Message}");
     return 1;
-}
-
-// Deterministic quantile indices: endpoints are always included, no random seed,
-// no memory is read by this helper. Each index is unique when requested <= count.
-static int[] DistributedIndices(int count, int requested)
-{
-    if (count < 2 || requested < 2 || requested > 20 || requested > count)
-        throw new ArgumentOutOfRangeException(nameof(requested));
-    return Enumerable.Range(0, requested)
-        .Select(i => (int)((long)i * (count - 1) / (requested - 1)))
-        .ToArray();
 }
 
 // Percurso verificado no FMRTE original:
