@@ -175,7 +175,7 @@ try
     return 0;
 }
 catch (Exception error) when (error is Win32Exception or IOException or InvalidOperationException
-    or UnauthorizedAccessException or ArgumentException or OverflowException or InvalidDataException)
+    or UnauthorizedAccessException or ArgumentException or OverflowException)
 {
     Console.Error.WriteLine($"BLOQUEADO / NÃO VALIDADO: {error.Message}");
     return 1;
