@@ -57,3 +57,17 @@ A classe `IncrementalPlayerSearch` implementa uma pesquisa retomável sobre `IIn
 - A janela WPF existente continua usando `PlayerQueryService` com uma lista fixa de demonstração; a pesquisa incremental está **no núcleo**, ainda não conectada à interface.
 
 `IncrementalSearchTests` cobre cursor, limites, busca por ID/nome/acento, falha de registro, interrupção em falhas de processo e fonte real proibida. Nenhum teste usa processos externos.
+
+## Integração da interface com a pesquisa incremental
+
+A janela WPF agora utiliza `IncrementalSearchController` ligado **exclusivamente** a `DemonstrationIndexedPlayerSource`. Ao abrir, examina o primeiro lote de três jogadores. `Ler próximo lote` avança mais três posições; `Anterior` e `Próxima` navegam entre as páginas de resultados **já examinados**, sem disparar leituras ocultas. `Pesquisar`, `Limpar busca` ou Enter reiniciam o cursor e consultam o primeiro lote do termo atualizado.
+
+- A grade exibe a contagem de correspondências e o estado da varredura (índice examinado, total, falhas, conclusão).
+- `Cancelar` sinaliza o `CancellationToken` da varredura em andamento; uma operação cancelada exige reinício explícito.
+- `IncrementalSearchController` bloqueia a continuidade após erro fatal (`IOException`, `Win32Exception`, `ObjectDisposedException`, `InvalidOperationException`) ou cancelamento; `Restart` obtém nova fonte e zera cursor e resultados.
+- Falhas isoladas de um registro são contabilizadas sem derrubar o restante da pesquisa; são apresentadas na contagem de falhas.
+- Ao identificar `fm.exe`, a UI continua apenas lendo metadados do arquivo; **não** abre o processo do jogo e não usa o catálogo operacional.
+- `IncrementalControllerTests` reproduz encerramento, interrupção e recuperação com uma fonte simulada; ainda não há teste real de fechamento do FM2008 em sessão aprovada.
+- `PageSize=3` e lote de três servem à demonstração; o scanner permite até 100 entradas por chamada. A pesquisa não antecipa resultados que ainda não foram varridos.
+
+**Limite:** esta integração não aprova o mapa mínimo e não implementa acesso à memória real. `NoApprovedPlayerMaps` permanece ativo.
