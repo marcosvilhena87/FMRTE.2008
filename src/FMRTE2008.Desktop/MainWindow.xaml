@@ -58,14 +58,22 @@
         <DataGridTextColumn Header="Nome comum" Binding="{Binding CommonName, TargetNullValue=—}" Width="*"/>
       </DataGrid.Columns>
     </DataGrid>
-    <DockPanel Grid.Row="5" LastChildFill="True" Margin="0,0,0,12">\n      <Button DockPanel.Dock="Right" Name="CancelScanButton" Content="Cancelar"\n              Click="CancelScanButton_Click" Padding="10,7" Margin="8,0,0,0" IsEnabled="False"/>\n      <Button DockPanel.Dock="Right" Name="LoadBatchButton" Content="Ler próximo lote"\n              Click="LoadBatchButton_Click" Padding="10,7" Margin="8,0,0,0"/>
+    <DockPanel Grid.Row="5" LastChildFill="True" Margin="0,0,0,12">
+      <Button DockPanel.Dock="Right" Name="CancelScanButton" Content="Cancelar"
+              Click="CancelScanButton_Click" Padding="10,7" Margin="8,0,0,0" IsEnabled="False"/>
+      <Button DockPanel.Dock="Right" Name="LoadBatchButton" Content="Ler próximo lote"
+              Click="LoadBatchButton_Click" Padding="10,7" Margin="8,0,0,0"/>
       <Button DockPanel.Dock="Right" Name="NextButton" Content="Próxima →"
               Click="NextButton_Click" Padding="13,7" Margin="8,0,0,0"/>
       <Button DockPanel.Dock="Right" Name="PreviousButton" Content="← Anterior"
               Click="PreviousButton_Click" Padding="13,7"/>
       <TextBlock Name="PageText" VerticalAlignment="Center" FontWeight="SemiBold"/>
     </DockPanel>
-    <TextBlock Grid.Row="6" TextWrapping="Wrap" FontWeight="SemiBold"
-               Text="BLOQUEADO: editar jogadores, alterar saves ou ler memória de processo real."/>
+    <StackPanel Grid.Row="6">
+      <TextBlock Name="ScanStatusText" TextWrapping="Wrap" Margin="0,0,0,5"
+                 Text="Pesquisa demonstrativa em lotes: aguardando início."/>
+      <TextBlock TextWrapping="Wrap" FontWeight="SemiBold"
+                 Text="BLOQUEADO: editar jogadores, alterar saves ou ler memória de processo real."/>
+    </StackPanel>
   </Grid>
 </Window>
