@@ -108,7 +108,8 @@ await MinimalIdentityTests.RunAsync();
 PlayerQueryTests.Run();
 await ApprovedIdentityPageTests.RunAsync();
 await IncrementalSearchTests.RunAsync();
-Console.WriteLine($"PASSARAM: {passed} testes de simulação + 4 testes de identidade + 6 de sessão + 11 verificações de identificação + 14 verificações de pesquisa/paginação + 8 verificações de página aprovada em fixture + busca incremental/falhas (sem processo real).");
+await IncrementalControllerTests.RunAsync();
+Console.WriteLine($"PASSARAM: {passed} testes de simulação + 4 testes de identidade + 6 de sessão + 11 verificações de identificação + 14 verificações de pesquisa/paginação + 8 verificações de página aprovada em fixture + busca incremental/falhas + encerramento/recuperação de sessão (sem processo real).");
 
 async Task Test(string name, Func<Task> action)
 {
