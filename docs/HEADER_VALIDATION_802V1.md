@@ -57,3 +57,28 @@ dotnet run --no-build --project .\tools\FMRTE2008.ReadOnlyProbe\FMRTE2008.ReadOn
 - Duas amostras idênticas na mesma partida **não** equivalem a validar o mapa em saves independentes.
 - Mudanças de memória entre leituras podem ser normais; se houver divergência, investigar sem promover mapa.
 - Endereços concretos são candidatos extraídos do IL legado e utilizados **exclusivamente pelo probe experimental**, não pela aplicação de produção.
+
+## Leitura experimental de nomes (somente leitura)
+
+A opção `--names` lê, para cada entrada amostrada, **primeiro nome, sobrenome e nome comum**. O caminho foi recuperado do IL do FMRTE v1.0.0.5:
+
+```text
+player = ReadU32(table + index * 4)
+nameObject = ReadU32(player + fieldOffset)     # 280, 284, 288
+innerObject = ReadU32(nameObject + 36)
+utf16Pointer = ReadU32(innerObject + 8)
+name = UTF16LE_NUL_Terminated(utf16Pointer, limit = 96 code units)
+```
+
+Os offsets `280/284/288` e `36` são observados em `loadplayersOffsets_8_0_2v2`, carregador também utilizado na build `8.0.2v1`. `getNameAtPtr` faz os dois acessos indiretos antes de chamar `ScanFunctions.readStringValue`, que decodifica UTF-16LE. O diagnóstico não tenta inferir nomes a partir de IDs.
+
+Execute após atualizar o checkout e compilar em .NET 10:
+
+```powershell
+$fm = Get-Process fm -ErrorAction Stop
+dotnet run --no-build --project .\tools\FMRTE2008.ReadOnlyProbe\FMRTE2008.ReadOnlyProbe.csproj -c Release -- --pid $fm.Id --confirm-read-only --first 5 --repeat 2 --names
+```
+
+- Valores nulos em uma das ligações da cadeia são apresentados como `<ausente>`, principalmente no nome comum opcional.
+- Leituras de ponteiro inválido, páginas ilegíveis e nomes acima de 96 unidades UTF-16 fazem o diagnóstico abortar com erro em vez de inventar texto.
+- Os valores devem ser conferidos com nomes e IDs de jogadores conhecidos no FM2008, em dois saves independentes. Amostras idênticas em uma partida não autorizam mapa operacional.
