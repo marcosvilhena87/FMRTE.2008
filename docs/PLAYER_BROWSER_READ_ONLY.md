@@ -71,3 +71,19 @@ A janela WPF agora utiliza `IncrementalSearchController` ligado **exclusivamente
 - `PageSize=3` e lote de três servem à demonstração; o scanner permite até 100 entradas por chamada. A pesquisa não antecipa resultados que ainda não foram varridos.
 
 **Limite:** esta integração não aprova o mapa mínimo e não implementa acesso à memória real. `NoApprovedPlayerMaps` permanece ativo.
+
+
+## Validação de endereçamento e estabilidade (memória simulada)
+
+Foi adicionado `StablePlayerIdentitySnapshotReader`, **somente uma classe experimental com `IProcessReader` injetado**, sem qualquer código de abertura de processos ou aprovação automática. Cada leitura:
+
+1. Calcula `HeaderVA = ModuleBase + HeaderRVA` usando `MinimalPlayerIdentityMap.ResolveHeaderAddress`, com validação contra base nula e overflow x86.
+2. Lê o cabeçalho (`tablePointer`, `count`) e o ponteiro da entrada desejada antes de decodificar o ID/nome.
+3. Faz a decodificação limitada por índice e UTF-16.
+4. Lê novamente o cabeçalho e o ponteiro da entrada; se algum deles mudou, **rejeita a amostra**, sem retornar identificação potencialmente incoerente.
+
+`AddressStabilityTests` exercita duas bases fictícias (`0x00400000`, `0x08000000`), confirmando respectivamente `HeaderVA=0x01B1ED4C` e `0x0971ED4C`, além de base inválida, overflow, ponteiro nulo, região ausente, overflow de ponteiro, leitura parcial, alteração de cabeçalho/ponteiro no meio da leitura, interrupção da sessão, abertura de **nova** memória simulada e cancelamento.
+
+**Limites:** as bases realocadas são sintéticas; os dois saves reais anteriores usaram a base preferencial `0x00400000`. Um cabeçalho/ponteiro estável antes/depois não comprova ausência de todas as mudanças intermediárias (problema ABA), nem consistência de todas as strings. Não há reconexão automática e nenhum teste desta etapa autoriza acesso operacional a `fm.exe`.
+
+`NoApprovedPlayerMaps` permanece sem entradas; WPF continua ligada somente à demonstração e não permite edição.
