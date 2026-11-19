@@ -28,3 +28,17 @@ Se a atualização for bloqueada por mudanças locais, preservar com `git stash 
 ## Testes de consulta
 
 `PlayerQueryTests` verifica paginação, limites, busca por nome, sobrenome, nome comum, ID exato, texto com acentos, resultados vazios e recusa de uma fonte marcada como processo real. São testes com fixtures, **não** validações dinâmicas do FM2008.
+
+
+## Preparação da conexão operacional (não habilitada)
+
+A classe `VerifiedPlayerReadSession` agora expõe `ReadIdentityPageAsync(pageNumber, pageSize)`, cujo acesso só é possível após `OpenAsync` validar a build exata, obter mapa por `IApprovedPlayerMapCatalog` e abrir a sessão por `IVerifiedProcessOpener`.
+
+- O método verifica ID offset `+256`, variante e SHA da build `8.0.2v1`, usa `MinimalPlayerIdentityReader` e limita `pageSize` a 1..100.
+- Somente os registros da página são decodificados. A lista inteira **não** é carregada na memória da interface.
+- `NoApprovedPlayerMaps` continua retornando `null`: na versão distribuída, a abertura **sempre é recusada**.
+- A interface exibe o controle de conexão em estado permanentemente desabilitado. Não existem botões que possam contornar a aprovação.
+- `ApprovedIdentityPageTests` exercita a paginação via aprovação **fictícia em memória simulada**, além de verificar que o catálogo real bloqueia a abertura antes de chamar o opener.
+- A busca global por nome/ID em uma fonte real ainda não existe. A pesquisa atual continua limitada à demonstração, pois a fonte aprovada futura exigirá uma estratégia incremental de busca (sem leitura ilimitada de todos os jogadores).
+
+**Pendências de aprovação:** confrontar IDs no jogo com outra fonte, revisar gerenciamento de ciclo de vida de sessão, revalidar endereço base/ASLR no conector do Windows, testar falhas de leitura em páginas reais, revisar política de aprovação e então integrar explicitamente a tela com uma fonte paginada. Nenhuma dessas pendências é automaticamente resolvida pelos testes de fixture.
