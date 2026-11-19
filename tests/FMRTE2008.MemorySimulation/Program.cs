@@ -102,6 +102,16 @@ await Test("rejeita sobreposição de regiões", () =>
     ThrowsSync<InvalidOperationException>(() => mem.AddRegion(0x1004, new byte[8]));
     return Task.CompletedTask;
 });
+await Test("F01: amostras idênticas retornam sucesso", () =>
+{
+    Equal(0, ReadOnlyProbeExitPolicy.FromStability(true));
+    return Task.CompletedTask;
+});
+await Test("F01: amostras divergentes retornam falha", () =>
+{
+    Equal(1, ReadOnlyProbeExitPolicy.FromStability(false));
+    return Task.CompletedTask;
+});
 BuildRecognitionTests.Run();
 await VerifiedSessionTests.RunAsync();
 await MinimalIdentityTests.RunAsync();
