@@ -172,7 +172,7 @@ try
         : stable ? "Estabilidade: amostras idênticas."
                  : "Estabilidade: divergência encontrada entre amostras.");
     Console.WriteLine("Diagnóstico somente leitura; mapa NÃO aprovado. Confirmar IDs com fonte independente e em outra partida.");
-    return 0;
+    return ReadOnlyProbeExitPolicy.FromStability(stable);
 }
 catch (Exception error) when (error is Win32Exception or IOException or InvalidOperationException
     or UnauthorizedAccessException or ArgumentException or OverflowException)
