@@ -1,0 +1,14 @@
+name: Compilar diagnóstico somente leitura
+on:
+  push:
+  pull_request:
+jobs:
+  compile:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compilar sem executar diagnóstico
+        run: dotnet build tools/FMRTE2008.ReadOnlyProbe/FMRTE2008.ReadOnlyProbe.csproj -c Release
