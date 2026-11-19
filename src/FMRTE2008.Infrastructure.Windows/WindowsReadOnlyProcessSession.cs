@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using FMRTE2008.Domain;
+using FMRTE2008.Application;
 
 namespace FMRTE2008.Infrastructure.Windows;
 
@@ -9,7 +10,7 @@ namespace FMRTE2008.Infrastructure.Windows;
 /// Adaptador Win32 de baixo nível, INTERNAL e somente leitura.
 /// Não pode ser usado em jogo real antes da validação da build e catálogo.
 /// </summary>
-internal sealed class WindowsReadOnlyProcessSession : IProcessReader, IDisposable
+internal sealed class WindowsReadOnlyProcessSession : IProcessReadSession
 {
     private const uint ProcessVmRead = 0x0010;
     private const uint ProcessQueryInformation = 0x0400;
