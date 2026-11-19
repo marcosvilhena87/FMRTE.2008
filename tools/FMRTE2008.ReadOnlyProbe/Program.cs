@@ -6,14 +6,44 @@ using Microsoft.Win32.SafeHandles;
 using FMRTE2008.Application;
 using FMRTE2008.Infrastructure.Windows;
 
-// Ferramenta experimental independente. Não registra mapa aprovado nem altera memória.
-// Uso deliberado: dotnet run --project tools/FMRTE2008.ReadOnlyProbe -- --pid 1234 --confirm-read-only
-if (!OperatingSystem.IsWindows() ||
-    args.Length != 3 || args[0] != "--pid" ||
-    !int.TryParse(args[1], out int pid) || pid <= 0 ||
+// Diagnóstico isolado: não aprova mapas e usa somente permissões de leitura.
+// --first limitado a 1..20; --repeat limitado a 1..10; total máximo 200 registros.
+if (!OperatingSystem.IsWindows() || args.Length < 3 ||
+    args[0] != "--pid" || !int.TryParse(args[1], out int pid) || pid <= 0 ||
     args[2] != "--confirm-read-only")
 {
-    Console.Error.WriteLine("Uso (Windows, jogo e save de teste): --pid <PID> --confirm-read-only");
+    Console.Error.WriteLine("Uso: --pid <PID> --confirm-read-only [--first 1..20] [--repeat 1..10]");
+    return 2;
+}
+int firstCount = 1;
+int repeatCount = 1;
+bool seenFirst = false, seenRepeat = false;
+bool validArgs = (args.Length - 3) % 2 == 0;
+for (int i = 3; validArgs && i < args.Length; i += 2)
+{
+    if (i + 1 >= args.Length || !int.TryParse(args[i + 1], out int value))
+    {
+        validArgs = false;
+        break;
+    }
+    switch (args[i])
+    {
+        case "--first" when !seenFirst && value is >= 1 and <= 20:
+            firstCount = value;
+            seenFirst = true;
+            break;
+        case "--repeat" when !seenRepeat && value is >= 1 and <= 10:
+            repeatCount = value;
+            seenRepeat = true;
+            break;
+        default:
+            validArgs = false;
+            break;
+    }
+}
+if (!validArgs)
+{
+    Console.Error.WriteLine("Parâmetros inválidos. Uso: --pid <PID> --confirm-read-only [--first 1..20] [--repeat 1..10]");
     return 2;
 }
 
@@ -54,26 +84,50 @@ try
     if (afterOpen != identity)
         throw new UnauthorizedAccessException("Executável foi alterado durante a validação");
 
-    byte[] header = ReadExact(handle, headerAddress, 8);
-    uint tablePtr = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(0, 4));
-    int count = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(4, 4));
     Console.WriteLine($"ModuleBase=0x{moduleBase:X8}; HeaderRVA=0x{headerRva:X8}; HeaderVA=0x{headerAddress:X8}");
-    Console.WriteLine($"Header: ponteiro=0x{tablePtr:X8}, quantidade={count}");
+    Console.WriteLine($"Amostragem solicitada: primeiros {firstCount} registros, {repeatCount} leitura(s).");
+    List<(uint Table, int Count, List<(uint Pointer, int Id)> Records)> samples = new();
 
-    if (tablePtr == 0 || count <= 0 || count > maxDiagnosticCount)
-        throw new InvalidDataException("Cabeçalho não passou nos invariantes preliminares");
-    ulong lastEntryEnd = checked((ulong)tablePtr + checked((ulong)(count - 1) * 4ul) + 4ul);
-    if (lastEntryEnd > (ulong)uint.MaxValue + 1)
-        throw new InvalidDataException("Tabela excede espaço x86");
+    for (int sampleIndex = 0; sampleIndex < repeatCount; sampleIndex++)
+    {
+        if (process.HasExited)
+            throw new InvalidOperationException("Jogo encerrado durante o diagnóstico");
+        byte[] header = ReadExact(handle, headerAddress, 8);
+        uint tablePtr = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(0, 4));
+        int count = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(4, 4));
+        Console.WriteLine($"Amostra {sampleIndex + 1}/{repeatCount}: tabela=0x{tablePtr:X8}; quantidade={count}");
+        if (tablePtr == 0 || count <= 0 || count > maxDiagnosticCount || firstCount > count)
+            throw new InvalidDataException("Cabeçalho não passou nos invariantes preliminares");
+        ulong lastEntryEnd = checked((ulong)tablePtr + checked((ulong)(count - 1) * 4ul) + 4ul);
+        if (lastEntryEnd > (ulong)uint.MaxValue + 1)
+            throw new InvalidDataException("Tabela excede o espaço x86");
 
-    uint first = BinaryPrimitives.ReadUInt32LittleEndian(ReadExact(handle, tablePtr, 4));
-    if (first == 0 || (ulong)first + playerIdOffset + 4 > (ulong)uint.MaxValue + 1)
-        throw new InvalidDataException("Primeiro ponteiro nulo ou fora da faixa x86");
-    int id = BinaryPrimitives.ReadInt32LittleEndian(ReadExact(handle, (ulong)first + playerIdOffset, 4));
-    Console.WriteLine($"Primeiro jogador: ponteiro=0x{first:X8}; id={id}");
-    if (id <= 0)
-        throw new InvalidDataException("ID não positivo; leitura não validada");
-    Console.WriteLine("Leitura de diagnóstico plausível, NÃO valida o mapa: confirmar em dois saves independentes e com IDs conhecidos.");
+        var records = new List<(uint Pointer, int Id)>();
+        for (int index = 0; index < firstCount; index++)
+        {
+            ulong slot = checked((ulong)tablePtr + (ulong)index * 4ul);
+            uint playerPtr = BinaryPrimitives.ReadUInt32LittleEndian(ReadExact(handle, slot, 4));
+            if (playerPtr == 0 || (ulong)playerPtr + playerIdOffset + 4 > (ulong)uint.MaxValue + 1)
+                throw new InvalidDataException($"Ponteiro nulo ou inválido no índice {index}");
+            int playerId = BinaryPrimitives.ReadInt32LittleEndian(
+                ReadExact(handle, (ulong)playerPtr + playerIdOffset, 4));
+            if (playerId <= 0)
+                throw new InvalidDataException($"ID não positivo no índice {index}");
+            records.Add((playerPtr, playerId));
+            Console.WriteLine($"  [{index}] ponteiro=0x{playerPtr:X8}; id={playerId}");
+        }
+        samples.Add((tablePtr, count, records));
+    }
+
+    bool stable = samples.Skip(1).All(sample =>
+        sample.Table == samples[0].Table &&
+        sample.Count == samples[0].Count &&
+        sample.Records.SequenceEqual(samples[0].Records));
+    Console.WriteLine(repeatCount == 1
+        ? "Estabilidade: não avaliada (uma amostra)."
+        : stable ? "Estabilidade: amostras idênticas."
+                 : "Estabilidade: divergência encontrada entre amostras.");
+    Console.WriteLine("Diagnóstico somente leitura; mapa NÃO aprovado. Confirmar IDs com fonte independente e em outra partida.");
     return 0;
 }
 catch (Exception error) when (error is Win32Exception or IOException or InvalidOperationException
