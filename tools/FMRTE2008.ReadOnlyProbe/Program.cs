@@ -8,20 +8,28 @@ using FMRTE2008.Application;
 using FMRTE2008.Infrastructure.Windows;
 
 // Diagnóstico isolado: não aprova mapas e usa somente permissões de leitura.
-// --first limitado a 1..20; --repeat limitado a 1..10; total máximo 200 registros.
+// --first ou --sample-distributed: 1..20; --repeat: 1..10; máximo 200 registros.
 if (!OperatingSystem.IsWindows() || args.Length < 3 ||
     args[0] != "--pid" || !int.TryParse(args[1], out int pid) || pid <= 0 ||
     args[2] != "--confirm-read-only")
 {
-    Console.Error.WriteLine("Uso: --pid <PID> --confirm-read-only [--first 1..20] [--repeat 1..10] [--names]");
+    Console.Error.WriteLine("Uso: --pid <PID> --confirm-read-only [--first 1..20 | --sample-distributed 2..20] [--repeat 1..10] [--names] [--module-only]");
     return 2;
 }
 int firstCount = 1;
 int repeatCount = 1;
-bool seenFirst = false, seenRepeat = false, namesRequested = false;
+bool seenFirst = false, seenDistributed = false, seenRepeat = false, namesRequested = false, moduleOnly = false;
+int distributedCount = 0;
 bool validArgs = true;
 for (int i = 3; validArgs && i < args.Length;)
 {
+    if (args[i] == "--module-only")
+    {
+        if (moduleOnly) { validArgs = false; break; }
+        moduleOnly = true;
+        i++;
+        continue;
+    }
     if (args[i] == "--names")
     {
         if (namesRequested) { validArgs = false; break; }
@@ -38,9 +46,13 @@ for (int i = 3; validArgs && i < args.Length;)
     i += 2;
     switch (option)
     {
-        case "--first" when !seenFirst && value is >= 1 and <= 20:
+        case "--first" when !seenFirst && !seenDistributed && value is >= 1 and <= 20:
             firstCount = value;
             seenFirst = true;
+            break;
+        case "--sample-distributed" when !seenFirst && !seenDistributed && value is >= 2 and <= 20:
+            distributedCount = value;
+            seenDistributed = true;
             break;
         case "--repeat" when !seenRepeat && value is >= 1 and <= 10:
             repeatCount = value;
@@ -51,7 +63,7 @@ for (int i = 3; validArgs && i < args.Length;)
             break;
     }
 }
-if (!validArgs)
+if (!validArgs || (moduleOnly && (seenFirst || seenDistributed || seenRepeat || namesRequested)))
 {
     Console.Error.WriteLine("Parâmetros inválidos. Uso: --pid <PID> --confirm-read-only [--first 1..20] [--repeat 1..10] [--names]");
     return 2;
@@ -85,6 +97,13 @@ try
     if (headerAddress > uint.MaxValue - 7ul)
         throw new InvalidDataException("Endereço calculado fora de faixa x86");
 
+    Console.WriteLine($"ModuleBase=0x{moduleBase:X8}; HeaderRVA=0x{headerRva:X8}; HeaderVA=0x{headerAddress:X8}");
+    if (moduleOnly)
+    {
+        Console.WriteLine("Inspeção do módulo concluída SEM OpenProcess/ReadProcessMemory; mapa NÃO aprovado.");
+        return 0;
+    }
+
     using var handle = Native.OpenProcess(0x0010 | 0x0400, false, pid); // VM_READ | QUERY_INFORMATION
     if (handle.IsInvalid)
         throw new Win32Exception(Marshal.GetLastWin32Error(), "OpenProcess somente leitura falhou");
@@ -94,8 +113,9 @@ try
     if (afterOpen != identity)
         throw new UnauthorizedAccessException("Executável foi alterado durante a validação");
 
-    Console.WriteLine($"ModuleBase=0x{moduleBase:X8}; HeaderRVA=0x{headerRva:X8}; HeaderVA=0x{headerAddress:X8}");
-    Console.WriteLine($"Amostragem solicitada: primeiros {firstCount} registros, {repeatCount} leitura(s).");
+    Console.WriteLine(seenDistributed
+        ? $"Amostragem distribuída solicitada: {distributedCount} índices determinísticos, {repeatCount} leitura(s)."
+        : $"Amostragem solicitada: primeiros {firstCount} registros, {repeatCount} leitura(s).");
     List<(uint Table, int Count, List<(uint Pointer, int Id, string First, string Last, string Common)> Records)> samples = new();
 
     for (int sampleIndex = 0; sampleIndex < repeatCount; sampleIndex++)
@@ -106,14 +126,18 @@ try
         uint tablePtr = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(0, 4));
         int count = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(4, 4));
         Console.WriteLine($"Amostra {sampleIndex + 1}/{repeatCount}: tabela=0x{tablePtr:X8}; quantidade={count}");
-        if (tablePtr == 0 || count <= 0 || count > maxDiagnosticCount || firstCount > count)
+        if (tablePtr == 0 || count <= 0 || count > maxDiagnosticCount ||
+            (!seenDistributed && firstCount > count) || (seenDistributed && distributedCount > count))
             throw new InvalidDataException("Cabeçalho não passou nos invariantes preliminares");
         ulong lastEntryEnd = checked((ulong)tablePtr + checked((ulong)(count - 1) * 4ul) + 4ul);
         if (lastEntryEnd > (ulong)uint.MaxValue + 1)
             throw new InvalidDataException("Tabela excede o espaço x86");
 
+        int[] indices = seenDistributed ? DistributedIndices(count, distributedCount)
+            : Enumerable.Range(0, firstCount).ToArray();
+        Console.WriteLine("Índices fixados nesta amostra: " + string.Join(",", indices));
         var records = new List<(uint Pointer, int Id, string First, string Last, string Common)>();
-        for (int index = 0; index < firstCount; index++)
+        foreach (int index in indices)
         {
             ulong slot = checked((ulong)tablePtr + (ulong)index * 4ul);
             uint playerPtr = BinaryPrimitives.ReadUInt32LittleEndian(ReadExact(handle, slot, 4));
@@ -151,10 +175,21 @@ try
     return 0;
 }
 catch (Exception error) when (error is Win32Exception or IOException or InvalidOperationException
-    or UnauthorizedAccessException or ArgumentException or OverflowException)
+    or UnauthorizedAccessException or ArgumentException or OverflowException or InvalidDataException)
 {
     Console.Error.WriteLine($"BLOQUEADO / NÃO VALIDADO: {error.Message}");
     return 1;
+}
+
+// Deterministic quantile indices: endpoints are always included, no random seed,
+// no memory is read by this helper. Each index is unique when requested <= count.
+static int[] DistributedIndices(int count, int requested)
+{
+    if (count < 2 || requested < 2 || requested > 20 || requested > count)
+        throw new ArgumentOutOfRangeException(nameof(requested));
+    return Enumerable.Range(0, requested)
+        .Select(i => (int)((long)i * (count - 1) / (requested - 1)))
+        .ToArray();
 }
 
 // Percurso verificado no FMRTE original:
