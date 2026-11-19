@@ -31,7 +31,7 @@ public partial class MainWindow : Window
                 $"Estado: {result.Reason}";
         }
         catch (Exception ex) when (
-            ex is IOException or UnauthorizedAccessException or
+            ex is System.IO.IOException or UnauthorizedAccessException or
             ArgumentException or System.ComponentModel.Win32Exception)
         {
             IdentityText.Text = "Não foi possível identificar o arquivo: " + ex.Message;
