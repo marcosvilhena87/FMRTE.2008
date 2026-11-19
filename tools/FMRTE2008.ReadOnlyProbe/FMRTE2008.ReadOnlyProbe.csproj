@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/FMRTE2008.Infrastructure.Windows/FMRTE2008.Infrastructure.Windows.csproj" />
+    <ProjectReference Include="../../src/FMRTE2008.Application/FMRTE2008.Application.csproj" />
+  </ItemGroup>
+</Project>
