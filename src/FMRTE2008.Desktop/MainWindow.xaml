@@ -1,19 +1,67 @@
 <Window x:Class="FMRTE2008.Desktop.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="FMRTE2008 — Identificação segura" Height="360" Width="680"
-        MinHeight="280" MinWidth="540">
-  <StackPanel Margin="24">
-    <TextBlock FontSize="23" FontWeight="SemiBold" Text="FMRTE2008"/>
-    <TextBlock Margin="0,10,0,10" TextWrapping="Wrap"
-               Text="Identifique o executável do FM2008 sem iniciar o jogo ou ler memória."/>
-    <Button Name="SelectExeButton" Width="220" Height="38"
-            HorizontalAlignment="Left" Content="Selecionar fm.exe"
-            Click="SelectExeButton_Click"/>
-    <TextBlock Margin="0,14,0,0" FontWeight="SemiBold" Text="Identificação"/>
-    <TextBlock Name="IdentityText" Margin="0,7,0,0" TextWrapping="Wrap"
-               Text="Nenhum executável selecionado."/>
-    <TextBlock Margin="0,15,0,0" TextWrapping="Wrap" FontWeight="SemiBold"
-               Text="Modo seguro: leitura e edição de memória desabilitadas."/>
-  </StackPanel>
+        Title="FMRTE2008 — Consulta de jogadores (somente leitura)"
+        Height="680" Width="1020" MinHeight="550" MinWidth="780">
+  <Grid Margin="22">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <StackPanel Grid.Row="0">
+      <TextBlock FontSize="25" FontWeight="SemiBold" Text="FMRTE2008"/>
+      <TextBlock Margin="0,5,0,12" TextWrapping="Wrap"
+                 Text="Consulta de jogadores — somente leitura; dados demonstrativos, sem conexão com o jogo."/>
+    </StackPanel>
+    <Border Grid.Row="1" Background="#FFF1F5F9" Padding="12" CornerRadius="5">
+      <StackPanel>
+        <TextBlock FontWeight="SemiBold" Text="MAPEAMENTO EXPERIMENTAL — ACESSO REAL BLOQUEADO"/>
+        <TextBlock Name="BuildStatusText" Margin="0,4,0,0" TextWrapping="Wrap"
+                   Text="Build-alvo: FM2008 8.0.2v1 | Mapa mínimo: pesquisa, não aprovado | Fonte atual: demonstração"/>
+        <TextBlock Text="Nenhuma leitura ou edição da memória do FM2008 é realizada nesta tela."
+                   Margin="0,3,0,0" TextWrapping="Wrap"/>
+      </StackPanel>
+    </Border>
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,13,0,8">
+      <Button Name="SelectExeButton" Content="Identificar fm.exe (arquivo)" Click="SelectExeButton_Click"
+              Padding="14,7" MinWidth="200"/>
+      <TextBlock Name="IdentityText" Margin="14,7,0,0" TextWrapping="Wrap"
+                 Text="Executável não selecionado. Nenhuma conexão com processo."/>
+    </StackPanel>
+    <DockPanel Grid.Row="3" Margin="0,8,0,12">
+      <Button DockPanel.Dock="Right" Name="ClearButton" Content="Limpar busca" Click="ClearButton_Click"
+              Padding="14,7" Margin="8,0,0,0"/>
+      <Button DockPanel.Dock="Right" Name="SearchButton" Content="Pesquisar" Click="SearchButton_Click"
+              Padding="14,7" Margin="8,0,0,0"/>
+      <TextBox Name="QueryBox" VerticalContentAlignment="Center" MinHeight="34"
+               MaxLength="128" ToolTip="Pesquise pelo ID exato ou por nome; sem distinção entre maiúsculas e acentos."
+               KeyDown="QueryBox_KeyDown"/>
+    </DockPanel>
+    <DataGrid Grid.Row="4" Name="PlayersGrid" AutoGenerateColumns="False"
+              IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
+              CanUserReorderColumns="False" CanUserSortColumns="False"
+              SelectionMode="Single" HeadersVisibility="Column" Margin="0,0,0,12">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="90"/>
+        <DataGridTextColumn Header="Primeiro nome" Binding="{Binding FirstName}" Width="*"/>
+        <DataGridTextColumn Header="Sobrenome" Binding="{Binding LastName}" Width="1.5*"/>
+        <DataGridTextColumn Header="Nome comum" Binding="{Binding CommonName, TargetNullValue=—}" Width="*"/>
+      </DataGrid.Columns>
+    </DataGrid>
+    <DockPanel Grid.Row="5" LastChildFill="True" Margin="0,0,0,12">
+      <Button DockPanel.Dock="Right" Name="NextButton" Content="Próxima →"
+              Click="NextButton_Click" Padding="13,7" Margin="8,0,0,0"/>
+      <Button DockPanel.Dock="Right" Name="PreviousButton" Content="← Anterior"
+              Click="PreviousButton_Click" Padding="13,7"/>
+      <TextBlock Name="PageText" VerticalAlignment="Center" FontWeight="SemiBold"/>
+    </DockPanel>
+    <TextBlock Grid.Row="6" TextWrapping="Wrap" FontWeight="SemiBold"
+               Text="BLOQUEADO: editar jogadores, alterar saves ou ler memória de processo real."/>
+  </Grid>
 </Window>
