@@ -77,6 +77,36 @@ public sealed class VerifiedPlayerReadSession : IDisposable
         return await reader.ReadPlayerIdAsync(header, 0, _map.PlayerIdOffset, cancellationToken);
     }
 
+    /// <summary>
+    /// Página de identificação pelo mapa mínimo. Só existe após OpenAsync e catálogo aprovado.
+    /// Lê apenas os itens pedidos, sem carregar a lista inteira e sem escrever na memória.
+    /// </summary>
+    public async Task<IReadOnlyList<MinimalPlayerIdentity>> ReadIdentityPageAsync(
+        int pageNumber, int pageSize = 20, CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (pageNumber < 1) throw new ArgumentOutOfRangeException(nameof(pageNumber));
+        if (pageSize is < 1 or > 100) throw new ArgumentOutOfRangeException(nameof(pageSize));
+        if (_map.PlayerIdOffset != 256 || _map.Variant != "8.0.2v1" ||
+            !string.Equals(_map.Sha256, MinimalPlayerIdentityMap.Research802V1.ExecutableSha256,
+                StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException("Mapa aprovado não corresponde aos offsets mínimos de identificação");
+
+        var tableReader = new PlayerListReader(_memory);
+        var header = await tableReader.ReadHeaderAsync(_map.HeaderAddress, cancellationToken);
+        long start = ((long)pageNumber - 1L) * pageSize;
+        if (start >= header.Count) return Array.Empty<MinimalPlayerIdentity>();
+        int end = (int)Math.Min(header.Count, start + pageSize);
+        var decoder = new MinimalPlayerIdentityReader(_memory, MinimalPlayerIdentityMap.Research802V1);
+        var result = new List<MinimalPlayerIdentity>(end - (int)start);
+        for (int index = (int)start; index < end; index++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            result.Add(await decoder.ReadAsync(header, index, cancellationToken));
+        }
+        return result;
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
