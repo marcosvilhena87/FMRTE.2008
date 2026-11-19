@@ -24,7 +24,11 @@
         <TextBlock FontWeight="SemiBold" Text="MAPEAMENTO EXPERIMENTAL — ACESSO REAL BLOQUEADO"/>
         <TextBlock Name="BuildStatusText" Margin="0,4,0,0" TextWrapping="Wrap"
                    Text="Build-alvo: FM2008 8.0.2v1 | Mapa mínimo: pesquisa, não aprovado | Fonte atual: demonstração"/>
-        <TextBlock Text="Nenhuma leitura ou edição da memória do FM2008 é realizada nesta tela."
+        <TextBlock Text="Sessão operacional: aguardando aprovação formal do mapa." Margin="0,3,0,0"/>
+      <Button Content="Conectar ao FM2008 (indisponível)" IsEnabled="False"
+              HorizontalAlignment="Left" Margin="0,7,0,5" Padding="12,5"
+              ToolTip="Nenhum mapa operacional aprovado. Esta interface não abre processos."/>
+      <TextBlock Text="Nenhuma leitura ou edição da memória do FM2008 é realizada nesta tela."
                    Margin="0,3,0,0" TextWrapping="Wrap"/>
       </StackPanel>
     </Border>
