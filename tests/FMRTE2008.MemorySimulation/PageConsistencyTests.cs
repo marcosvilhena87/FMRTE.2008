@@ -10,7 +10,9 @@ internal static class PageConsistencyTests
 {
     private enum Fault { None, TableAfterFirstId, CountAfterFirstId,
         SecondSlotAfterFirstId, FirstSlotAfterLastId, PartialLastId,
-        CancelLastId, DuplicateId, DuplicatePointer }
+        CancelLastId, DuplicateId, DuplicatePointer,
+        SecondSlotDuringFinalSweep, FirstSlotAfterSecondFinalCheck,
+        PartialFinalSweep, CancelFinalSweep }
 
     public static async Task RunAsync()
     {
@@ -39,11 +41,13 @@ internal static class PageConsistencyTests
         foreach (var fault in new[] { Fault.TableAfterFirstId, Fault.CountAfterFirstId,
                      Fault.SecondSlotAfterFirstId, Fault.FirstSlotAfterLastId,
                      Fault.PartialLastId, Fault.CancelLastId, Fault.DuplicateId,
-                     Fault.DuplicatePointer })
+                     Fault.DuplicatePointer, Fault.SecondSlotDuringFinalSweep,
+                     Fault.FirstSlotAfterSecondFinalCheck, Fault.PartialFinalSweep,
+                     Fault.CancelFinalSweep })
         {
             var fake = new FaultMemory(fault);
             using var session = await Open(identity, fake);
-            if (fault == Fault.CancelLastId)
+            if (fault is Fault.CancelLastId or Fault.CancelFinalSweep)
                 await Reject<OperationCanceledException>(() => session.ReadIdentityPageAsync(1, 2));
             else
                 await Reject<InvalidDataException>(() => session.ReadIdentityPageAsync(1, 2));
@@ -102,6 +106,7 @@ internal static class PageConsistencyTests
         private readonly SimulatedProcessMemory _memory = new();
         private readonly Fault _fault;
         private bool _readFirstId, _readLastId;
+        private int _secondSlotReads;
         public bool Disposed { get; private set; }
         public int ReadCount { get; private set; }
 
@@ -138,8 +143,30 @@ internal static class PageConsistencyTests
                 if (_fault == Fault.TableAfterFirstId) return Header(0x2800, 2);
                 if (_fault == Fault.CountAfterFirstId) return Header(0x2000, 3);
             }
+            if (at == 0x2004 && length == 4)
+            {
+                _secondSlotReads++;
+                // At read #4, initial capture, decoder lookup and per-record
+                // check are complete; the final forward sweep is underway.
+                if (_secondSlotReads == 4)
+                {
+                    if (_fault == Fault.SecondSlotDuringFinalSweep)
+                        return U32(0x3500);
+                    if (_fault == Fault.PartialFinalSweep)
+                        return new byte[2];
+                    if (_fault == Fault.CancelFinalSweep)
+                        throw new OperationCanceledException("F05 simulated final-sweep cancellation", ct);
+                }
+            }
             if (at == 0x2004 && length == 4 && _readFirstId &&
                 _fault == Fault.SecondSlotAfterFirstId) return U32(0x3500);
+            // After the second slot is confirmed in the forward sweep,
+            // mutate the first slot that the forward sweep already visited.
+            // The reverse sweep must detect this intervening change.
+            if (at == 0x2000 && length == 4 &&
+                _fault == Fault.FirstSlotAfterSecondFinalCheck &&
+                _secondSlotReads >= 4)
+                return U32(0x3600);
             if (at == 0x2000 && length == 4 && _readLastId &&
                 _fault == Fault.FirstSlotAfterLastId) return U32(0x3600);
             if (at == 0x2004 && length == 4 &&
