@@ -31,6 +31,8 @@ jobs:
         run: python tests/FMRTE2008.MemorySimulation/F23ResidualRiskIndependentSchemaValidation.py
       - name: F23.3 - validar decisão humana não realizada no esquema independente
         run: python tests/FMRTE2008.MemorySimulation/F23HumanDecisionIndependentSchemaValidation.py
+      - name: F23.4 - consolidar evidencias e verificar integridade e proveniencia
+        run: python tests/FMRTE2008.MemorySimulation/F23ConsolidatedValidation.py
       - name: F16 - robustez de handles Windows locais sem fm.exe
         run: dotnet run --project tests/FMRTE2008.WindowsResilience/FMRTE2008.WindowsResilience.csproj --configuration Release
       - name: Publicar evidencias F20 com digest independente do Git
