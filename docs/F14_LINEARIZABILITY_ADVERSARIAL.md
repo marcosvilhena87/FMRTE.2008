@@ -24,6 +24,13 @@ A existência de ao menos uma ordem sequencial compatível é verificada para hi
 - `GetLiveHandleIdentity`: consulta protegida por lock; exceções invalidam a sessão.
 - `Close`: marca fechamento único sob lock, executa callback fora do lock; a tentativa única não comprova que a liberação física ocorreu em callback excepcional.
 
+## Revisão final — abrangência do oráculo e combinações de falhas
+A auditoria acrescentou controles negativos com leitura bem-sucedida após Dispose, após falha de inspeção, consulta saudável após falha nativa, rejeição espúria enquanto a sessão está ativa e consulta saudável depois de Dispose. Também incluiu um histórico válido de operações sobrepostas. Esses controles avaliam se o verificador realmente distingue histórias admissíveis e inadmissíveis, mas não o transformam numa prova total de linearizabilidade.
+
+A suíte `CombinedLinearizationFaultTests` cobre **384 cenários adicionais** (64 identidades × 6 modos): erro nativo + Dispose; falha de identidade + Dispose; cancelamento + Dispose; erro nativo + exceção no fechamento; Dispose durante leitura + exceção no fechamento; leitura saudável seguida de Dispose excepcional. Cada cenário controla o momento de conclusão da leitura com `TaskCompletionSource`, exige que o handle permaneça aberto enquanto a leitura está pendente, confirma uma única tentativa de fechamento e verifica que recuperação emprega um recurso novo e independente.
+
+**Risco residual deliberadamente explicitado:** se o fechamento lançar exceção, a exceção primária da leitura pode ser substituída pela exceção de limpeza. A tentativa de fechamento único não garante que a operação de liberação física teve êxito. O verificador não modela completamente operações canceladas, leituras rejeitadas por ocupação ou eventual consistência temporal da memória nativa.
+
 ## CI e segurança
 A validação pós-merge do F13 confirmou o commit da `main` e presença dos testes, mas a ferramenta disponível não lista workflows `push`; os quatro workflows pós-merge não foram confirmados.
 
