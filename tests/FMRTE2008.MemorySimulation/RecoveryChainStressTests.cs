@@ -28,7 +28,7 @@ internal static class RecoveryChainStressTests
             var identity = new ProcessHandleIdentity(2000 + seed,
                 638100000000000000 + seed);
             int firstCloses = 0, secondCloses = 0, recoveryCloses = 0;
-            int firstCalls = 0, secondCalls = 0, recoveryCalls = 0;
+            int firstCalls = 0, secondCalls = 0, recoveryCalls = 0, identityChecks = 0;
             var entered = Signal();
             var release = Signal();
             using var cancel = new CancellationTokenSource();
@@ -36,7 +36,12 @@ internal static class RecoveryChainStressTests
             // First session: either an immediate native failure or a pending
             // read that is invalidated while still holding the handle lease.
             var first = new NativeReadOnlyGuard(
-                () => identity,
+                () =>
+                {
+                    if (mode == 5 && Interlocked.Increment(ref identityChecks) == 2)
+                        throw new IOException("Injected concurrent identity fault");
+                    return identity;
+                },
                 async (_, buffer, _) =>
                 {
                     Interlocked.Increment(ref firstCalls);
@@ -98,13 +103,12 @@ internal static class RecoveryChainStressTests
                 }
                 else
                 {
-                    // Invalidating a pending read through a standalone
-                    // identity failure must defer cleanup until completion.
-                    // This mode uses its own fail-on-second-inspection handle
-                    // below, so explicitly invalidate by inner Dispose here.
-                    first.Dispose();
+                    // Failure in a standalone handle query invalidates this
+                    // pending read without releasing the leased handle early.
+                    await Reject<IOException>(() => Task.Run(() =>
+                        first.GetLiveHandleIdentity()));
                     Check(Volatile.Read(ref firstCloses) == 0,
-                        "pending handle closed during invalidation", seed, mode);
+                        "identity failure closed pending handle", seed, mode);
                 }
                 release.TrySetResult(true);
             }
