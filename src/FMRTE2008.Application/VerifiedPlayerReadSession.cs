@@ -34,6 +34,7 @@ public sealed class VerifiedPlayerReadSession : IDisposable
 {
     private readonly IProcessReadSession _memory;
     private readonly ApprovedPlayerMap _map;
+    private readonly CrossPageSnapshotReader _crossPageReader;
     private readonly object _lifetimeGate = new();
     private bool _disposed;
     private bool _invalidated;
@@ -43,6 +44,8 @@ public sealed class VerifiedPlayerReadSession : IDisposable
     {
         _memory = memory;
         _map = map;
+        _crossPageReader = new CrossPageSnapshotReader(
+            memory, MinimalPlayerIdentityMap.Research802V1, map.HeaderAddress);
     }
 
     public static async Task<VerifiedPlayerReadSession> OpenAsync(
@@ -99,9 +102,7 @@ public sealed class VerifiedPlayerReadSession : IDisposable
 
         return await GuardedReadAsync(async ct =>
         {
-            return await new ConsistentPlayerPageReader(
-                _memory, MinimalPlayerIdentityMap.Research802V1)
-                .ReadAsync(_map.HeaderAddress, pageNumber, pageSize, ct);
+            return await _crossPageReader.ReadPageAsync(pageNumber, pageSize, ct);
         }, cancellationToken);
     }
 
