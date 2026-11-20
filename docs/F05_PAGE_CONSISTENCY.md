@@ -15,8 +15,11 @@ injetado; os testes não abrem processos do jogo.
 4. Para cada jogador, reconferir o cabeçalho, decodificar sua identidade,
    verificar o ponteiro capturado e rejeitar IDs ou ponteiros repetidos
    dentro da mesma página. Reconferir cabeçalho e ponteiro após a decodificação.
-5. Antes de publicar qualquer resultado, reconferir novamente o cabeçalho,
-   **todos os ponteiros capturados** e o cabeçalho final.
+5. Antes de publicar qualquer resultado, reconferir o cabeçalho e
+   **todos os ponteiros capturados** em ordem crescente, depois conferir o
+   cabeçalho e realizar segunda varredura em ordem decrescente, finalizando
+   com nova conferência do cabeçalho. A varredura inversa reduz a janela em
+   que um slot já conferido pode mudar enquanto outro está sendo lido.
 6. Somente publicar uma lista de leitura estável após o retorno integral da
    função. Exceções e cancelamentos descartam todo o lote.
 
@@ -33,6 +36,10 @@ invalidam a sessão e impedem sua reutilização.
 - Mudança **tardia do primeiro slot** durante o segundo registro.
 - Leitura parcial do ID do último jogador.
 - Cancelamento no último jogador.
+- Mudança do segundo ponteiro durante a primeira varredura final.
+- Mudança do primeiro ponteiro após a conferência final do segundo slot;
+  a varredura inversa detecta a divergência.
+- Leitura parcial e cancelamento durante a primeira varredura final.
 - ID duplicado e ponteiro duplicado dentro da página.
 - Descarte da sessão após falha, impossibilidade de reutilizá-la e
   recuperação apenas por nova sessão fictícia.
@@ -41,7 +48,8 @@ invalidam a sessão e impedem sua reutilização.
 ## Riscos e limites
 
 A conferência repetida de bytes **não é atômica** e não detecta toda
-sequência ABA (A→B→A) ocorrida entre observações. A checagem cobre
+sequência ABA (A→B→A) ocorrida entre observações. Uma mudança após
+sua última observação também pode escapar, mesmo com a varredura inversa. A checagem cobre
 somente os slots **da página requisitada**, não todos os jogadores do jogo.
 IDs repetidos na mesma página são tratados como inconsistência conservadora;
 isso não constitui prova sobre identidade estável fora da amostra.
