@@ -1,0 +1,456 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "F23.2 residual risk traceability, never approval",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "source",
+    "decision",
+    "risks"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "f23-residual-risk-traceability-offline"
+    },
+    "source": {
+      "const": {
+        "f22MatrixPath": "tests/FMRTE2008.MemorySimulation/F22ApprovalGates.json",
+        "f23B03ManifestPath": "tests/FMRTE2008.MemorySimulation/F23B03ProvenanceGaps.json",
+        "mappingRepo": "marcosvilhena87/FM2008.mapping",
+        "mappingCommit": "df5be0493a1ac7be57208ff0e91c2d7193dfec73"
+      }
+    },
+    "decision": {
+      "const": {
+        "approved": false,
+        "operational": false,
+        "humanApproval": null,
+        "gateA12": "GATE-BLOQUEADO",
+        "b03": "PENDING-DECLARED",
+        "decisionStatus": "NOT_MADE"
+      }
+    },
+    "risks": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": false,
+      "prefixItems": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "riskId",
+            "gateId",
+            "criteria",
+            "observationIds",
+            "description",
+            "documentaryStatus",
+            "riskAccepted",
+            "riskAcceptanceReference",
+            "origin"
+          ],
+          "properties": {
+            "riskId": {
+              "const": "RA-01"
+            },
+            "gateId": {
+              "const": "G1"
+            },
+            "criteria": {
+              "const": [
+                "A01",
+                "A02"
+              ]
+            },
+            "observationIds": {
+              "const": [
+                "R01",
+                "R02"
+              ]
+            },
+            "description": {
+              "const": "Build and instance identity not independently attested"
+            },
+            "documentaryStatus": {
+              "const": "PENDING"
+            },
+            "riskAccepted": {
+              "const": false
+            },
+            "riskAcceptanceReference": {
+              "const": null
+            },
+            "origin": {
+              "const": "f22-documentary-gap-not-independent-game-observation"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "riskId",
+            "gateId",
+            "criteria",
+            "observationIds",
+            "description",
+            "documentaryStatus",
+            "riskAccepted",
+            "riskAcceptanceReference",
+            "origin"
+          ],
+          "properties": {
+            "riskId": {
+              "const": "RA-02"
+            },
+            "gateId": {
+              "const": "G3"
+            },
+            "criteria": {
+              "const": [
+                "A06",
+                "A07",
+                "A08"
+              ]
+            },
+            "observationIds": {
+              "const": [
+                "R05",
+                "R06",
+                "R07"
+              ]
+            },
+            "description": {
+              "const": "Cross-snapshot consistency under natural table changes unverified"
+            },
+            "documentaryStatus": {
+              "const": "PENDING"
+            },
+            "riskAccepted": {
+              "const": false
+            },
+            "riskAcceptanceReference": {
+              "const": null
+            },
+            "origin": {
+              "const": "f22-documentary-gap-not-independent-game-observation"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "riskId",
+            "gateId",
+            "criteria",
+            "observationIds",
+            "description",
+            "documentaryStatus",
+            "riskAccepted",
+            "riskAcceptanceReference",
+            "origin"
+          ],
+          "properties": {
+            "riskId": {
+              "const": "RA-03"
+            },
+            "gateId": {
+              "const": "G3"
+            },
+            "criteria": {
+              "const": [
+                "A06",
+                "A07",
+                "A08"
+              ]
+            },
+            "observationIds": {
+              "const": [
+                "R05",
+                "R06",
+                "R07"
+              ]
+            },
+            "description": {
+              "const": "Termination during an actual read not historically observed"
+            },
+            "documentaryStatus": {
+              "const": "PENDING"
+            },
+            "riskAccepted": {
+              "const": false
+            },
+            "riskAcceptanceReference": {
+              "const": null
+            },
+            "origin": {
+              "const": "f22-documentary-gap-not-independent-game-observation"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "riskId",
+            "gateId",
+            "criteria",
+            "observationIds",
+            "description",
+            "documentaryStatus",
+            "riskAccepted",
+            "riskAcceptanceReference",
+            "origin"
+          ],
+          "properties": {
+            "riskId": {
+              "const": "RA-04"
+            },
+            "gateId": {
+              "const": "G3"
+            },
+            "criteria": {
+              "const": [
+                "A06",
+                "A07",
+                "A08"
+              ]
+            },
+            "observationIds": {
+              "const": [
+                "R05",
+                "R06",
+                "R07"
+              ]
+            },
+            "description": {
+              "const": "Session-switch and ABA recovery not historically demonstrated"
+            },
+            "documentaryStatus": {
+              "const": "PENDING"
+            },
+            "riskAccepted": {
+              "const": false
+            },
+            "riskAcceptanceReference": {
+              "const": null
+            },
+            "origin": {
+              "const": "f22-documentary-gap-not-independent-game-observation"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "riskId",
+            "gateId",
+            "criteria",
+            "observationIds",
+            "description",
+            "documentaryStatus",
+            "riskAccepted",
+            "riskAcceptanceReference",
+            "origin"
+          ],
+          "properties": {
+            "riskId": {
+              "const": "RA-05"
+            },
+            "gateId": {
+              "const": "G2"
+            },
+            "criteria": {
+              "const": [
+                "A03",
+                "A04",
+                "A05",
+                "A10"
+              ]
+            },
+            "observationIds": {
+              "const": [
+                "R03",
+                "R04",
+                "R07"
+              ]
+            },
+            "description": {
+              "const": "Distributed ID/full-name samples do not validate entire table or common-name components"
+            },
+            "documentaryStatus": {
+              "const": "PENDING"
+            },
+            "riskAccepted": {
+              "const": false
+            },
+            "riskAcceptanceReference": {
+              "const": null
+            },
+            "origin": {
+              "const": "f22-documentary-gap-not-independent-game-observation"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "riskId",
+            "gateId",
+            "criteria",
+            "observationIds",
+            "description",
+            "documentaryStatus",
+            "riskAccepted",
+            "riskAcceptanceReference",
+            "origin"
+          ],
+          "properties": {
+            "riskId": {
+              "const": "RA-06"
+            },
+            "gateId": {
+              "const": "G1"
+            },
+            "criteria": {
+              "const": [
+                "A01",
+                "A02"
+              ]
+            },
+            "observationIds": {
+              "const": [
+                "R01",
+                "R02"
+              ]
+            },
+            "description": {
+              "const": "Naturally relocated module base not documented"
+            },
+            "documentaryStatus": {
+              "const": "PENDING"
+            },
+            "riskAccepted": {
+              "const": false
+            },
+            "riskAcceptanceReference": {
+              "const": null
+            },
+            "origin": {
+              "const": "f22-documentary-gap-not-independent-game-observation"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "riskId",
+            "gateId",
+            "criteria",
+            "observationIds",
+            "description",
+            "documentaryStatus",
+            "riskAccepted",
+            "riskAcceptanceReference",
+            "origin"
+          ],
+          "properties": {
+            "riskId": {
+              "const": "RA-07"
+            },
+            "gateId": {
+              "const": "G4"
+            },
+            "criteria": {
+              "const": [
+                "A09",
+                "A11"
+              ]
+            },
+            "observationIds": {
+              "const": [
+                "R01",
+                "R07"
+              ]
+            },
+            "description": {
+              "const": "Read-only scope and unapproved offset exclusion require continued guard"
+            },
+            "documentaryStatus": {
+              "const": "PENDING"
+            },
+            "riskAccepted": {
+              "const": false
+            },
+            "riskAcceptanceReference": {
+              "const": null
+            },
+            "origin": {
+              "const": "f22-documentary-gap-not-independent-game-observation"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "riskId",
+            "gateId",
+            "criteria",
+            "observationIds",
+            "description",
+            "documentaryStatus",
+            "riskAccepted",
+            "riskAcceptanceReference",
+            "origin"
+          ],
+          "properties": {
+            "riskId": {
+              "const": "RA-08"
+            },
+            "gateId": {
+              "const": "G4"
+            },
+            "criteria": {
+              "const": [
+                "A09",
+                "A11"
+              ]
+            },
+            "observationIds": {
+              "const": [
+                "R01",
+                "R07"
+              ]
+            },
+            "description": {
+              "const": "Build variant and map isolation must remain enforced"
+            },
+            "documentaryStatus": {
+              "const": "PENDING"
+            },
+            "riskAccepted": {
+              "const": false
+            },
+            "riskAcceptanceReference": {
+              "const": null
+            },
+            "origin": {
+              "const": "f22-documentary-gap-not-independent-game-observation"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
