@@ -191,6 +191,7 @@ await NativeReadGuardTests.RunAsync();
 await CombinedFaultStressTests.RunAsync();
 await RecoveryChainStressTests.RunAsync();
 await StateInvariantModelTests.RunAsync();
+await StateTransitionAuditTests.RunAsync();
 Console.WriteLine($"PASSARAM: {passed} testes de simulação + 4 testes de identidade + 6 de sessão + 11 verificações de identificação + 14 verificações de pesquisa/paginação + 8 verificações de página aprovada em fixture + busca incremental/falhas + encerramento/recuperação de sessão + endereçamento/estabilidade + índices distribuídos (sem processo real).");
 
 async Task Test(string name, Func<Task> action)
