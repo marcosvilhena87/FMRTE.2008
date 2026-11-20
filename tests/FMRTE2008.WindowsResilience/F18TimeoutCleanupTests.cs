@@ -17,7 +17,9 @@ internal static class F18TimeoutCleanupTests
         if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException("F18 requires Windows.");
         NegativeOracleControls();
+        await NegativePendingTaskControlAsync();
         PartialAcquisitionAndRecovery();
+        ConsecutiveFaultRecovery();
         await TimeoutAndConcurrentDisposeAsync();
         Console.WriteLine($"OK F18 Windows: {Cycles} timeouts with observed teardown, " +
             $"{Cycles * 4} partial-acquisition stages, 2 consecutive modeled faults per cycle, " +
@@ -98,10 +100,57 @@ internal static class F18TimeoutCleanupTests
         MustReject(() => { var o = new Oracle(); o.Create(1); o.Lease(1); o.AssertSettled(); });
         MustReject(() => { var o = new Oracle(); o.Started(1); o.AssertSettled(); });
         MustReject(() => { var o = new Oracle(); o.Create(1); o.BeginClose(1); o.UncertainClose(1); o.AssertSettled(); });
-        // Negative omission of a barrier is detected while the task really remains pending.
+    }
+
+    private static async Task NegativePendingTaskControlAsync()
+    {
+        var oracle = new Oracle();
+        var barrier = Signal();
         var entered = Signal();
-        if (entered.Task.IsCompleted)
-            throw new Exception("F18 omitted-barrier negative control failed");
+        oracle.Started(91);
+        Task pending = Task.Run(async () =>
+        {
+            entered.TrySetResult(true);
+            try { await barrier.Task; }
+            finally { oracle.Finished(91); }
+        });
+        try
+        {
+            await entered.Task.WaitAsync(Deadline);
+            MustReject(oracle.AssertSettled); // A missing signal leaves a real task pending.
+            if (pending.IsCompleted)
+                throw new Exception("F18 pending task unexpectedly completed");
+        }
+        finally
+        {
+            barrier.TrySetResult(true);
+            await pending.WaitAsync(Deadline); // Observe actual completion, not observer timeout.
+        }
+        oracle.AssertSettled();
+    }
+
+    private static void ConsecutiveFaultRecovery()
+    {
+        for (int cycle = 0; cycle < Cycles; cycle++)
+        {
+            var oracle = new Oracle();
+            for (int failure = 0; failure < 2; failure++)
+            {
+                int id = cycle * 2 + failure;
+                using var owned = new ManualResetEvent(false);
+                oracle.Create(id);
+                oracle.BeginClose(id);
+                try { throw new IOException("F18 modeled independent cleanup failure"); }
+                catch (IOException) { oracle.UncertainClose(id); }
+                finally { owned.Dispose(); } // Never suppress the actual OS cleanup.
+                oracle.AssertSettled(failure + 1);
+            }
+            if (oracle.Created != 2 || oracle.Uncertain != 2 || oracle.Completed != 0)
+                throw new Exception("F18 consecutive failure accounting mismatch");
+            using var newEvent = new ManualResetEvent(false);
+            if (!newEvent.Set() || !newEvent.WaitOne(0))
+                throw new Exception("F18 recovery after consecutive faults failed");
+        }
     }
 
     private static void PartialAcquisitionAndRecovery()
