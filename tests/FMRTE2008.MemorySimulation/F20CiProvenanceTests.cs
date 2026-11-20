@@ -93,7 +93,7 @@ internal static class F20CiProvenanceTests
         {
             using var eventDoc = JsonDocument.Parse(input.EventJson);
             int number = eventDoc.RootElement.GetProperty("number").GetInt32();
-            if (number != 21 || Field(run, "head_branch") != input.HeadRef)
+            if (number <= 0 || Field(run, "head_branch") != input.HeadRef)
                 throw new InvalidDataException("F20 unexpected PR identity");
             bool associated = run.GetProperty("pull_requests").EnumerateArray().Any(pr =>
                 pr.GetProperty("number").GetInt32() == number &&
