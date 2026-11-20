@@ -165,7 +165,7 @@ internal static class CrossPageSnapshotTests
                 return U32(999);
             if (at == 0x3300 && length == 4)
             {
-                if (_mutation == Mutation.SecondId) return U32(999);
+                if (_mutation == Mutation.SecondId) return U32(20);
                 if (_mutation == Mutation.PartialSecondId) return new byte[2];
                 if (_mutation == Mutation.CancelSecondId)
                     throw new OperationCanceledException("F06 simulated cancellation", ct);
