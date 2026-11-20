@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "kind": "f23-b03-provenance-gaps-offline",
+  "source": {
+    "repository": "marcosvilhena87/FM2008.mapping",
+    "commit": "df5be0493a1ac7be57208ff0e91c2d7193dfec73",
+    "f21InventoryPath": "tests/FMRTE2008.MemorySimulation/F21B03Evidence.json"
+  },
+  "decision": {
+    "approved": false,
+    "operational": false,
+    "gateA12": "GATE-BLOQUEADO",
+    "b03": "PENDING-DECLARED",
+    "humanApproval": null
+  },
+  "observations": [
+    {
+      "observationId": "R01",
+      "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+      "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+      "reportedResult": "ReadOnlyProbe recognized build 8.0.2v1 for reported PID 24860; absent PID 1234 was rejected; modified-build rejection not observed.",
+      "sourceEvidenceStatus": "user-reported-not-independently-audited",
+      "provenanceStatus": "PENDING-DECLARED",
+      "executor": null,
+      "observedAt": null,
+      "environment": null,
+      "collectionMethod": null,
+      "externalCorroboration": null
+    },
+    {
+      "observationId": "R02",
+      "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+      "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+      "reportedResult": "ModuleBase 0x00400000 and HeaderVA 0x01B1ED4C reported; no naturally relocated module base observed.",
+      "sourceEvidenceStatus": "user-reported-not-independently-audited",
+      "provenanceStatus": "PENDING-DECLARED",
+      "executor": null,
+      "observedAt": null,
+      "environment": null,
+      "collectionMethod": null,
+      "externalCorroboration": null
+    },
+    {
+      "observationId": "R03",
+      "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+      "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+      "reportedResult": "First save reported 9 distributed positions from 6697 players, repeated twice; subsequent manual declaration confirmed 9/9 ID/full-name pairs, not common-name components.",
+      "sourceEvidenceStatus": "user-reported-not-independently-audited",
+      "provenanceStatus": "PENDING-DECLARED",
+      "executor": null,
+      "observedAt": null,
+      "environment": null,
+      "collectionMethod": null,
+      "externalCorroboration": null
+    },
+    {
+      "observationId": "R04",
+      "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-r04-profile-checks.csv",
+      "sourceBlobSha": "45d50af819f0429e1bf887fee4b908e262b88d49",
+      "reportedResult": "First-save profile-check CSV records eight additional ID/full-name confirmations; common names remain not separately confirmed.",
+      "sourceEvidenceStatus": "user-reported-not-independently-audited",
+      "provenanceStatus": "PENDING-DECLARED",
+      "executor": null,
+      "observedAt": null,
+      "environment": null,
+      "collectionMethod": null,
+      "externalCorroboration": null
+    },
+    {
+      "observationId": "R05",
+      "sourcePath": "research/builds/fm2008-8.0.2v1-r05-week-advance-2026-11-18.md",
+      "sourceBlobSha": "6f9be7702e01e4023aef95d1efa540c399887d1f",
+      "reportedResult": "Count changed 6697 to 6698 after one reported week; eight overlapping distributed positions remained identical; ABA and interrupted reads not demonstrated.",
+      "sourceEvidenceStatus": "user-reported-not-independently-audited",
+      "provenanceStatus": "PENDING-DECLARED",
+      "executor": null,
+      "observedAt": null,
+      "environment": null,
+      "collectionMethod": null,
+      "externalCorroboration": null
+    },
+    {
+      "observationId": "R06",
+      "sourcePath": "research/builds/fm2008-8.0.2v1-r06-normal-restart-2026-11-18.md",
+      "sourceBlobSha": "89a1dae5102062d5e880158a7aa485a1483b028c",
+      "reportedResult": "Normal restart changed PID 24860 to 17632 and table address; 9/9 ID/full-name pairs on the new session were manually reported confirmed; mid-read termination untested.",
+      "sourceEvidenceStatus": "user-reported-not-independently-audited",
+      "provenanceStatus": "PENDING-DECLARED",
+      "executor": null,
+      "observedAt": null,
+      "environment": null,
+      "collectionMethod": null,
+      "externalCorroboration": null
+    },
+    {
+      "observationId": "R07",
+      "sourcePath": "research/builds/fm2008-8.0.2v1-r07-consolidation.md",
+      "sourceBlobSha": "5af5157240def9b9b31d2a9533377f89892b94a6",
+      "reportedResult": "Two saves with 6697 and 5154 players each have nine distributed positions and 9/9 manually declared ID/full-name matches; no full-table or common-name validation.",
+      "sourceEvidenceStatus": "user-reported-not-independently-audited",
+      "provenanceStatus": "PENDING-DECLARED",
+      "executor": null,
+      "observedAt": null,
+      "environment": null,
+      "collectionMethod": null,
+      "externalCorroboration": null
+    }
+  ]
+}

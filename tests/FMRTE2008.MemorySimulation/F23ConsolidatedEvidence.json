@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "kind": "f23-consolidated-offline-integrity",
+  "sourceRepository": "marcosvilhena87/FM2008.mapping",
+  "sourceCommit": "df5be0493a1ac7be57208ff0e91c2d7193dfec73",
+  "sources": [
+    {
+      "stage": "F21",
+      "path": "tests/FMRTE2008.MemorySimulation/F21B03Evidence.json",
+      "sha256": "6e4f40eca3e437cbfd91f0191c372b6cfe4f579d93ed27d6e1aca5ea719748d8"
+    },
+    {
+      "stage": "F22",
+      "path": "tests/FMRTE2008.MemorySimulation/F22ApprovalGates.json",
+      "sha256": "cc6295e8696293c2c80bc968008b0cc340aeb741a63aeec185bbeede0f8530f8"
+    },
+    {
+      "stage": "F23.1",
+      "path": "tests/FMRTE2008.MemorySimulation/F23B03ProvenanceGaps.json",
+      "sha256": "e2221552209889f5575716c51b40d8e92e79145d95cbd4638970f70670569b75"
+    },
+    {
+      "stage": "F23.2",
+      "path": "tests/FMRTE2008.MemorySimulation/F23ResidualRisks.json",
+      "sha256": "32c125bec19d3bd1c15327c32be6b1f9fa530c7735464cf5cdb6278847cecec6"
+    },
+    {
+      "stage": "F23.3",
+      "path": "tests/FMRTE2008.MemorySimulation/F23HumanDecisionNotMade.json",
+      "sha256": "a7823a5a4a2833afa9aafbd7b71bdabecbbe31a7bb9390e97472fab0992dce7c"
+    }
+  ],
+  "traceability": {
+    "observationIds": [
+      "R01",
+      "R02",
+      "R03",
+      "R04",
+      "R05",
+      "R06",
+      "R07"
+    ],
+    "gateIds": [
+      "G1",
+      "G2",
+      "G3",
+      "G4",
+      "G5"
+    ],
+    "criteriaIds": [
+      "A01",
+      "A02",
+      "A03",
+      "A04",
+      "A05",
+      "A06",
+      "A07",
+      "A08",
+      "A09",
+      "A10",
+      "A11",
+      "A12"
+    ],
+    "riskIds": [
+      "RA-01",
+      "RA-02",
+      "RA-03",
+      "RA-04",
+      "RA-05",
+      "RA-06",
+      "RA-07",
+      "RA-08"
+    ],
+    "decisionGate": "G5",
+    "decisionCriterion": "A12"
+  },
+  "approval": {
+    "approved": false,
+    "operational": false,
+    "humanApproval": null,
+    "gateA12": "GATE-BLOQUEADO",
+    "b03": "PENDING-DECLARED",
+    "decision": "NOT_MADE",
+    "acceptedRiskCount": 0,
+    "approvedMapCount": 0
+  },
+  "provenance": {
+    "observationsIndependentlyAttested": false,
+    "ciIsHistoricalEvidence": false,
+    "ciIsHumanApproval": false,
+    "prReadyIsHumanApproval": false
+  }
+}

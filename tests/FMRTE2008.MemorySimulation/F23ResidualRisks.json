@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "kind": "f23-residual-risk-traceability-offline",
+  "source": {
+    "f22MatrixPath": "tests/FMRTE2008.MemorySimulation/F22ApprovalGates.json",
+    "f23B03ManifestPath": "tests/FMRTE2008.MemorySimulation/F23B03ProvenanceGaps.json",
+    "mappingRepo": "marcosvilhena87/FM2008.mapping",
+    "mappingCommit": "df5be0493a1ac7be57208ff0e91c2d7193dfec73"
+  },
+  "decision": {
+    "approved": false,
+    "operational": false,
+    "humanApproval": null,
+    "gateA12": "GATE-BLOQUEADO",
+    "b03": "PENDING-DECLARED",
+    "decisionStatus": "NOT_MADE"
+  },
+  "risks": [
+    {
+      "riskId": "RA-01",
+      "gateId": "G1",
+      "criteria": [
+        "A01",
+        "A02"
+      ],
+      "observationIds": [
+        "R01",
+        "R02"
+      ],
+      "description": "Build and instance identity not independently attested",
+      "documentaryStatus": "PENDING",
+      "riskAccepted": false,
+      "riskAcceptanceReference": null,
+      "origin": "f22-documentary-gap-not-independent-game-observation"
+    },
+    {
+      "riskId": "RA-02",
+      "gateId": "G3",
+      "criteria": [
+        "A06",
+        "A07",
+        "A08"
+      ],
+      "observationIds": [
+        "R05",
+        "R06",
+        "R07"
+      ],
+      "description": "Cross-snapshot consistency under natural table changes unverified",
+      "documentaryStatus": "PENDING",
+      "riskAccepted": false,
+      "riskAcceptanceReference": null,
+      "origin": "f22-documentary-gap-not-independent-game-observation"
+    },
+    {
+      "riskId": "RA-03",
+      "gateId": "G3",
+      "criteria": [
+        "A06",
+        "A07",
+        "A08"
+      ],
+      "observationIds": [
+        "R05",
+        "R06",
+        "R07"
+      ],
+      "description": "Termination during an actual read not historically observed",
+      "documentaryStatus": "PENDING",
+      "riskAccepted": false,
+      "riskAcceptanceReference": null,
+      "origin": "f22-documentary-gap-not-independent-game-observation"
+    },
+    {
+      "riskId": "RA-04",
+      "gateId": "G3",
+      "criteria": [
+        "A06",
+        "A07",
+        "A08"
+      ],
+      "observationIds": [
+        "R05",
+        "R06",
+        "R07"
+      ],
+      "description": "Session-switch and ABA recovery not historically demonstrated",
+      "documentaryStatus": "PENDING",
+      "riskAccepted": false,
+      "riskAcceptanceReference": null,
+      "origin": "f22-documentary-gap-not-independent-game-observation"
+    },
+    {
+      "riskId": "RA-05",
+      "gateId": "G2",
+      "criteria": [
+        "A03",
+        "A04",
+        "A05",
+        "A10"
+      ],
+      "observationIds": [
+        "R03",
+        "R04",
+        "R07"
+      ],
+      "description": "Distributed ID/full-name samples do not validate entire table or common-name components",
+      "documentaryStatus": "PENDING",
+      "riskAccepted": false,
+      "riskAcceptanceReference": null,
+      "origin": "f22-documentary-gap-not-independent-game-observation"
+    },
+    {
+      "riskId": "RA-06",
+      "gateId": "G1",
+      "criteria": [
+        "A01",
+        "A02"
+      ],
+      "observationIds": [
+        "R01",
+        "R02"
+      ],
+      "description": "Naturally relocated module base not documented",
+      "documentaryStatus": "PENDING",
+      "riskAccepted": false,
+      "riskAcceptanceReference": null,
+      "origin": "f22-documentary-gap-not-independent-game-observation"
+    },
+    {
+      "riskId": "RA-07",
+      "gateId": "G4",
+      "criteria": [
+        "A09",
+        "A11"
+      ],
+      "observationIds": [
+        "R01",
+        "R07"
+      ],
+      "description": "Read-only scope and unapproved offset exclusion require continued guard",
+      "documentaryStatus": "PENDING",
+      "riskAccepted": false,
+      "riskAcceptanceReference": null,
+      "origin": "f22-documentary-gap-not-independent-game-observation"
+    },
+    {
+      "riskId": "RA-08",
+      "gateId": "G4",
+      "criteria": [
+        "A09",
+        "A11"
+      ],
+      "observationIds": [
+        "R01",
+        "R07"
+      ],
+      "description": "Build variant and map isolation must remain enforced",
+      "documentaryStatus": "PENDING",
+      "riskAccepted": false,
+      "riskAcceptanceReference": null,
+      "origin": "f22-documentary-gap-not-independent-game-observation"
+    }
+  ]
+}
