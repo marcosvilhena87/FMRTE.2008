@@ -91,6 +91,8 @@ public sealed class NativeReadOnlyGuard : IProcessHandleBoundReadSession
             if (outcome.BytesRead != (nuint)length)
                 throw new InvalidDataException($"Leitura nativa parcial: {outcome.BytesRead} de {length} bytes");
             cancellationToken.ThrowIfCancellationRequested();
+            lock (_gate)
+                ObjectDisposedException.ThrowIf(_disposed || _invalidated, this);
             var after = _inspect();
             if (before != after)
                 throw new InvalidOperationException("Identidade do handle mudou durante leitura");
