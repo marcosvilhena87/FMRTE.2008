@@ -34,9 +34,11 @@ public sealed class VerifiedPlayerReadSession : IDisposable
 {
     private readonly IProcessReadSession _memory;
     private readonly ApprovedPlayerMap _map;
+    private readonly object _lifetimeGate = new();
     private bool _disposed;
     private bool _invalidated;
-    private readonly SemaphoreSlim _readGate = new(1, 1);
+    private bool _activeRead;
+    private bool _memoryDisposed;
     private VerifiedPlayerReadSession(IProcessReadSession memory, ApprovedPlayerMap map)
     {
         _memory = memory;
@@ -121,41 +123,69 @@ public sealed class VerifiedPlayerReadSession : IDisposable
     private async Task<T> GuardedReadAsync<T>(Func<CancellationToken, Task<T>> read,
         CancellationToken cancellationToken)
     {
-        ObjectDisposedException.ThrowIf(_disposed || _invalidated, this);
-        // Reject concurrent session use rather than interleaving page/identity reads.
-        if (!await _readGate.WaitAsync(0, cancellationToken))
-            throw new InvalidOperationException("Outra leitura da sessão está em andamento");
-        try
+        // Claim the read under the same gate used by Dispose. A handle must
+        // not be released while an asynchronous read is using it.
+        lock (_lifetimeGate)
         {
             ObjectDisposedException.ThrowIf(_disposed || _invalidated, this);
-            try
+            if (_activeRead)
+                throw new InvalidOperationException("Outra leitura da sessão está em andamento");
+            _activeRead = true;
+        }
+
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            T result = await read(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            lock (_lifetimeGate)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                T result = await read(cancellationToken);
-                cancellationToken.ThrowIfCancellationRequested();
+                // Never publish an in-flight result if Dispose invalidated
+                // the logical session while the underlying read was pending.
                 ObjectDisposedException.ThrowIf(_disposed || _invalidated, this);
                 return result;
             }
-            catch (Exception error) when (error is IOException or InvalidDataException
-                or OverflowException or ArgumentOutOfRangeException
-                or OperationCanceledException or ObjectDisposedException
-                or System.ComponentModel.Win32Exception)
-            {
+        }
+        catch (Exception error) when (error is IOException or InvalidDataException
+            or OverflowException or ArgumentOutOfRangeException
+            or OperationCanceledException or ObjectDisposedException
+            or System.ComponentModel.Win32Exception)
+        {
+            lock (_lifetimeGate)
                 _invalidated = true;
-                _memory.Dispose();
-                throw;
-            }
+            throw;
         }
         finally
         {
-            _readGate.Release();
+            bool releaseMemory = false;
+            lock (_lifetimeGate)
+            {
+                _activeRead = false;
+                if ((_disposed || _invalidated) && !_memoryDisposed)
+                {
+                    _memoryDisposed = true;
+                    releaseMemory = true;
+                }
+            }
+            if (releaseMemory)
+                _memory.Dispose();
         }
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
-        _memory.Dispose();
+        bool releaseMemory = false;
+        lock (_lifetimeGate)
+        {
+            if (_disposed) return;
+            _disposed = true;
+            if (!_activeRead && !_memoryDisposed)
+            {
+                _memoryDisposed = true;
+                releaseMemory = true;
+            }
+        }
+        if (releaseMemory)
+            _memory.Dispose();
     }
 }
