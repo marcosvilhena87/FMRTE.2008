@@ -215,28 +215,21 @@ internal static class F17ResourceConcurrencyTests
         bool secondAttempted = false;
         try
         {
-            try
-            {
-                l.AttemptDispose(800001);
-                throw new IOException("F17 injected first close callback failure");
-            }
-            catch (IOException)
-            {
-                l.MarkUncertain(800001);
-            }
-            finally
-            {
-                try { first.Dispose(); }
-                finally
-                {
-                    secondAttempted = true;
-                    DisposeRecorded(second, 800002, l);
-                }
-            }
+            l.AttemptDispose(800001);
+            throw new IOException("F17 injected first close callback failure");
+        }
+        catch (IOException)
+        {
+            l.MarkUncertain(800001);
         }
         finally
         {
-            // Using declarations also guarantee local event cleanup on failure.
+            try { first.Dispose(); }
+            finally
+            {
+                secondAttempted = true;
+                DisposeRecorded(second, 800002, l);
+            }
         }
         if (!secondAttempted || l.DisposeAttempts != 2 ||
             l.DisposeCompletions != 1 || l.UncertainReleases != 1)
