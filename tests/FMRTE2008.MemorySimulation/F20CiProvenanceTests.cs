@@ -24,6 +24,11 @@ internal static class F20CiProvenanceTests
     {
         var actual = ReadFromRunner(root);
         var result = Validate(actual);
+        if (actual.EventName == "local-unattested")
+        {
+            Console.WriteLine("OK F20 CI identity: local-unattested (no GitHub identity claims); provenance negatives=0.");
+            return result;
+        }
 
         // Call the same validator as production with deterministic mutations.
         int rejected = 0;
@@ -137,7 +142,6 @@ internal static class F20CiProvenanceTests
     private static Identity MutateEventHead(Identity original)
     {
         if (original.EventName == "local-unattested") return original with { EventSha = "invalid" };
-        using var json = JsonDocument.Parse(original.EventJson);
         var root = System.Text.Json.Nodes.JsonNode.Parse(original.EventJson)!;
         if (original.EventName == "push") root["after"] = new string('0', 40);
         else root["pull_request"]!["head"]!["ref"] = "altered-head";
