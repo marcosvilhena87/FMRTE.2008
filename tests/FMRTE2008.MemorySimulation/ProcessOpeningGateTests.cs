@@ -124,6 +124,70 @@ internal static class ProcessOpeningGateTests
         }
         Check(deniedAcquires == 0, "pre-cancel reached acquire");
 
+        // Cancel while the second inspection is in flight: the acquired handle
+        // must remain owned by the gate and be closed exactly once.
+        var enteredSecond = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSecond = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var pendingSource = new CountingSession();
+        using (var pendingCts = new CancellationTokenSource())
+        {
+            int inspectCount = 0;
+            async Task<ProcessOpeningEvidence> DelayedInspect(CancellationToken ct)
+            {
+                if (++inspectCount == 1) return original;
+                enteredSecond.TrySetResult(true);
+                await releaseSecond.Task;
+                return original;
+            }
+            var pending = VerifiedProcessOpeningGate.OpenAsync(123, expected,
+                DelayedInspect,
+                _ => Task.FromResult<IProcessReadSession>(pendingSource),
+                pendingCts.Token);
+            await enteredSecond.Task;
+            Check(pendingSource.Disposes == 0,
+                "source disposed before second inspection finished");
+            pendingCts.Cancel();
+            releaseSecond.TrySetResult(true);
+            await Reject(() => pending, typeof(OperationCanceledException));
+            Check(pendingSource.Disposes == 1,
+                "cancel during second inspection did not release once");
+        }
+
+        // Two independent opens at the same PID must not share handle ownership.
+        // The first instance changes while the other remains unchanged.
+        var staleOpened = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var resumeStale = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var oldHandle = new CountingSession();
+        var newHandle = new CountingSession();
+        int staleInspections = 0;
+        async Task<ProcessOpeningEvidence> StaleInspect(CancellationToken ct)
+        {
+            if (++staleInspections == 1) return original;
+            staleOpened.TrySetResult(true);
+            await resumeStale.Task;
+            return original with { StartTimeUtcTicks = original.StartTimeUtcTicks + 1 };
+        }
+        var staleOpening = VerifiedProcessOpeningGate.OpenAsync(123, expected,
+            StaleInspect, _ => Task.FromResult<IProcessReadSession>(oldHandle));
+        await staleOpened.Task;
+        using (var independent = await VerifiedProcessOpeningGate.OpenAsync(123, expected,
+            _ => Task.FromResult(original),
+            _ => Task.FromResult<IProcessReadSession>(newHandle)))
+        {
+            Check(oldHandle.Disposes == 0 && newHandle.Disposes == 0,
+                "overlapping opens closed a handle prematurely");
+            resumeStale.TrySetResult(true);
+            await Reject(() => staleOpening, typeof(InvalidOperationException));
+            Check(oldHandle.Disposes == 1 && newHandle.Disposes == 0,
+                "failure of one opening affected another handle");
+        }
+        Check(newHandle.Disposes == 1,
+            "independent successful opening did not dispose once");
+
         var fresh = new CountingSession();
         using (var retry = await VerifiedProcessOpeningGate.OpenAsync(123, expected,
             _ => Task.FromResult(original),
