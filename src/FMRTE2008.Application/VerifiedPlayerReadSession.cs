@@ -34,7 +34,11 @@ public sealed class VerifiedPlayerReadSession : IDisposable
 {
     private readonly IProcessReadSession _memory;
     private readonly ApprovedPlayerMap _map;
+    private readonly object _lifetimeGate = new();
     private bool _disposed;
+    private bool _invalidated;
+    private bool _activeRead;
+    private bool _memoryDisposed;
     private VerifiedPlayerReadSession(IProcessReadSession memory, ApprovedPlayerMap map)
     {
         _memory = memory;
@@ -71,10 +75,12 @@ public sealed class VerifiedPlayerReadSession : IDisposable
 
     public async Task<PlayerIdRecord> ReadFirstPlayerIdAsync(CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        var reader = new PlayerListReader(_memory);
-        PlayerListHeader header = await reader.ReadHeaderAsync(_map.HeaderAddress, cancellationToken);
-        return await reader.ReadPlayerIdAsync(header, 0, _map.PlayerIdOffset, cancellationToken);
+        return await GuardedReadAsync(async ct =>
+        {
+            var reader = new PlayerListReader(_memory);
+            PlayerListHeader header = await reader.ReadHeaderAsync(_map.HeaderAddress, ct);
+            return await reader.ReadPlayerIdAsync(header, 0, _map.PlayerIdOffset, ct);
+        }, cancellationToken);
     }
 
     /// <summary>
@@ -84,7 +90,6 @@ public sealed class VerifiedPlayerReadSession : IDisposable
     public async Task<IReadOnlyList<MinimalPlayerIdentity>> ReadIdentityPageAsync(
         int pageNumber, int pageSize = 20, CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
         if (pageNumber < 1) throw new ArgumentOutOfRangeException(nameof(pageNumber));
         if (pageSize is < 1 or > 100) throw new ArgumentOutOfRangeException(nameof(pageSize));
         if (_map.PlayerIdOffset != 256 || _map.Variant != "8.0.2v1" ||
@@ -92,25 +97,95 @@ public sealed class VerifiedPlayerReadSession : IDisposable
                 StringComparison.OrdinalIgnoreCase))
             throw new UnauthorizedAccessException("Mapa aprovado não corresponde aos offsets mínimos de identificação");
 
-        var tableReader = new PlayerListReader(_memory);
-        var header = await tableReader.ReadHeaderAsync(_map.HeaderAddress, cancellationToken);
-        long start = ((long)pageNumber - 1L) * pageSize;
-        if (start >= header.Count) return Array.Empty<MinimalPlayerIdentity>();
-        int end = (int)Math.Min(header.Count, start + pageSize);
-        var decoder = new MinimalPlayerIdentityReader(_memory, MinimalPlayerIdentityMap.Research802V1);
-        var result = new List<MinimalPlayerIdentity>(end - (int)start);
-        for (int index = (int)start; index < end; index++)
+        return await GuardedReadAsync(async ct =>
+        {
+            var tableReader = new PlayerListReader(_memory);
+            var header = await tableReader.ReadHeaderAsync(_map.HeaderAddress, ct);
+            long start = ((long)pageNumber - 1L) * pageSize;
+            if (start >= header.Count) return (IReadOnlyList<MinimalPlayerIdentity>)Array.Empty<MinimalPlayerIdentity>();
+            int end = (int)Math.Min(header.Count, start + pageSize);
+            var decoder = new MinimalPlayerIdentityReader(_memory, MinimalPlayerIdentityMap.Research802V1);
+            var result = new List<MinimalPlayerIdentity>(end - (int)start);
+            for (int index = (int)start; index < end; index++)
+            {
+                ct.ThrowIfCancellationRequested();
+                result.Add(await decoder.ReadAsync(header, index, ct));
+            }
+            return (IReadOnlyList<MinimalPlayerIdentity>)result.AsReadOnly();
+        }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Fail closed after a truncated/invalid read, loss of the process or interrupted
+    /// operation. No subsequent read may reuse the handle; caller must open a new
+    /// verified session. This does not approve any real mapping.
+    /// </summary>
+    private async Task<T> GuardedReadAsync<T>(Func<CancellationToken, Task<T>> read,
+        CancellationToken cancellationToken)
+    {
+        // Claim the read under the same gate used by Dispose. A handle must
+        // not be released while an asynchronous read is using it.
+        lock (_lifetimeGate)
+        {
+            ObjectDisposedException.ThrowIf(_disposed || _invalidated, this);
+            if (_activeRead)
+                throw new InvalidOperationException("Outra leitura da sessão está em andamento");
+            _activeRead = true;
+        }
+
+        try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            result.Add(await decoder.ReadAsync(header, index, cancellationToken));
+            T result = await read(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            lock (_lifetimeGate)
+            {
+                // Never publish an in-flight result if Dispose invalidated
+                // the logical session while the underlying read was pending.
+                ObjectDisposedException.ThrowIf(_disposed || _invalidated, this);
+                return result;
+            }
         }
-        return result;
+        catch (Exception error) when (error is IOException or InvalidDataException
+            or OverflowException or ArgumentOutOfRangeException
+            or OperationCanceledException or ObjectDisposedException
+            or System.ComponentModel.Win32Exception)
+        {
+            lock (_lifetimeGate)
+                _invalidated = true;
+            throw;
+        }
+        finally
+        {
+            bool releaseMemory = false;
+            lock (_lifetimeGate)
+            {
+                _activeRead = false;
+                if ((_disposed || _invalidated) && !_memoryDisposed)
+                {
+                    _memoryDisposed = true;
+                    releaseMemory = true;
+                }
+            }
+            if (releaseMemory)
+                _memory.Dispose();
+        }
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
-        _memory.Dispose();
+        bool releaseMemory = false;
+        lock (_lifetimeGate)
+        {
+            if (_disposed) return;
+            _disposed = true;
+            if (!_activeRead && !_memoryDisposed)
+            {
+                _memoryDisposed = true;
+                releaseMemory = true;
+            }
+        }
+        if (releaseMemory)
+            _memory.Dispose();
     }
 }
