@@ -155,6 +155,11 @@ try
                 lastName = ReadLegacyName(handle, playerPtr, 284);
                 commonName = ReadLegacyName(handle, playerPtr, 288);
             }
+            // F02: reject any record if the header, table ownership or slot
+            // changed while its ID and optional names were being decoded.
+            ReadOnlyRecordConsistency.ConfirmUnchanged(
+                (address, length) => ReadExact(handle, address, length),
+                headerAddress, tablePtr, count, index, playerPtr);
             records.Add(new ReadOnlyProbePlayer(playerPtr, playerId, firstName, lastName, commonName));
             Console.WriteLine($"  [{index}] ponteiro=0x{playerPtr:X8}; id={playerId}");
             if (namesRequested)
