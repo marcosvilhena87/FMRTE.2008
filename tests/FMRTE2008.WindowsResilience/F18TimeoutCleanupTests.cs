@@ -115,15 +115,20 @@ internal static class F18TimeoutCleanupTests
             try { await action(); }
             catch (Exception ex) { RecordCleanup(ex); }
         }
-        public void ThrowIfAny()
+        public Exception Combined(Exception? terminal = null)
         {
-            if (Primary is null && Cleanup.Count == 0) return;
-            if (Primary is not null && Cleanup.Count == 0)
-                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(Primary).Throw();
             var all = new List<Exception>();
             if (Primary is not null) all.Add(Primary);
             all.AddRange(Cleanup);
-            throw new AggregateException("F18 primary and cleanup failures retained in order", all);
+            if (terminal is not null) all.Add(terminal);
+            if (all.Count == 0) throw new InvalidOperationException("F18 no errors to combine");
+            return all.Count == 1 ? all[0] :
+                new AggregateException("F18 primary, cleanup and teardown errors retained in order", all);
+        }
+        public void ThrowIfAny()
+        {
+            if (Primary is null && Cleanup.Count == 0) return;
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(Combined()).Throw();
         }
     }
 
@@ -156,12 +161,13 @@ internal static class F18TimeoutCleanupTests
         NegativeOracleControls();
         await PendingTaskAndCancellationControlsAsync();
         FaultPriorityAndIndependentTeardownControls();
+        ModeledReleaseFailureControls();
         PartialAcquisitionAndRecovery();
         ConsecutiveFaultRecovery();
         await TimeoutAndConcurrentDisposeAsync();
         Console.WriteLine($"OK F18 Windows: {Cycles} observed timeouts, {Cycles * 4} acquisition stages, " +
             $"{Cycles} two-fault recovery cycles, 10 negative oracle controls, " +
-            "cancellation/exception, primary+cleanup and independent teardown controls.");
+            "cancellation/exception, modeled release failures, primary+cleanup and independent teardown controls.");
     }
 
     private static void NegativeOracleControls()
@@ -249,6 +255,13 @@ internal static class F18TimeoutCleanupTests
         if (attempts != 2 || !ReferenceEquals(faults.Primary, primary) ||
             faults.Cleanup.Count != 1 || !ReferenceEquals(faults.Cleanup[0], firstCleanup))
             throw new Exception("F18 independent teardown or diagnostics failed");
+        var terminal = new TimeoutException("modeled failed join");
+        if (faults.Combined(terminal) is not AggregateException combined ||
+            combined.InnerExceptions.Count != 3 ||
+            !ReferenceEquals(combined.InnerExceptions[0], primary) ||
+            !ReferenceEquals(combined.InnerExceptions[1], firstCleanup) ||
+            !ReferenceEquals(combined.InnerExceptions[2], terminal))
+            throw new Exception("F18 join timeout masked original exception");
         try
         {
             faults.ThrowIfAny();
@@ -275,6 +288,51 @@ internal static class F18TimeoutCleanupTests
             !first.SafeWaitHandle.IsClosed || !second.SafeWaitHandle.IsClosed)
             throw new Exception("F18 independent native closure was skipped");
         oracle.AssertSettled();
+    }
+
+    private static void ModeledReleaseFailureControls()
+    {
+        // A managed callback can fail before native release. The oracle MUST
+        // reject a settled history while the real SafeHandle lease is live.
+        // Never inject an actual OS/DangerousRelease failure.
+        for (int cycle = 0; cycle < Cycles; cycle++)
+        {
+            using var owned = new ManualResetEvent(false);
+            var oracle = new Oracle();
+            oracle.Create(cycle);
+            SafeWaitHandle safe = owned.SafeWaitHandle;
+            bool added = false;
+            safe.DangerousAddRef(ref added);
+            if (!added) throw new Exception("F18 fixture could not acquire lease");
+            oracle.Lease(cycle);
+            Close(owned, cycle, oracle);
+            var errors = new Faults();
+            var primary = new IOException("modeled worker failure");
+            errors.SetPrimary(primary);
+            try
+            {
+                throw new InvalidOperationException("injected managed release callback fault");
+            }
+            catch (InvalidOperationException ex)
+            {
+                errors.RecordCleanup(ex);
+                MustReject(() => oracle.AssertSettled());
+            }
+            finally
+            {
+                // Actual native release must be attempted even after modeled failure.
+                // Crucially, no ledger success is recorded if DangerousRelease throws.
+                safe.DangerousRelease();
+                oracle.ReturnLease(cycle);
+            }
+            if (!safe.IsClosed) throw new Exception("F18 modeled release left native handle open");
+            oracle.AssertSettled();
+            if (errors.Combined() is not AggregateException aggregate ||
+                aggregate.InnerExceptions.Count != 2 ||
+                !ReferenceEquals(aggregate.InnerExceptions[0], primary) ||
+                !ReferenceEquals(aggregate.InnerExceptions[1], errors.Cleanup[0]))
+                throw new Exception("F18 primary/managed release failure lost");
+        }
     }
 
     private static void PartialAcquisitionAndRecovery()
@@ -401,8 +459,8 @@ internal static class F18TimeoutCleanupTests
                     {
                         if (added)
                         {
-                            try { safe.DangerousRelease(); }
-                            finally { if (recorded) oracle.ReturnLease(ownedId); }
+                            safe.DangerousRelease(); // If it throws, lease stays outstanding.
+                            if (recorded) oracle.ReturnLease(ownedId);
                         }
                     }
                     finally { oracle.Finished(taskId); }
@@ -431,19 +489,26 @@ internal static class F18TimeoutCleanupTests
             finally
             {
                 release.TrySetResult(true);
+                // The only worker gate has been released and its continuation is
+                // finite and deterministic. Await the ACTUAL worker rather than
+                // misinterpreting WaitAsync timeout as task completion. A separate
+                // negative control above checks that observer timeout alone cannot
+                // settle a task. This path must not abandon a pending worker.
                 try
                 {
-                    await worker.WaitAsync(Deadline);
+                    await worker;
                     joined = true;
                 }
-                catch (IOException ex) when (cycle % 2 == 0)
+                catch (IOException ex) when (cycle % 2 == 0 &&
+                    ex.Message.Contains("worker fault", StringComparison.Ordinal))
                 {
                     joined = worker.IsCompleted;
-                    if (!joined) faults.RecordCleanup(new Exception("F18 faulted worker was not completed"));
-                    else if (!ex.Message.Contains("worker fault", StringComparison.Ordinal))
-                        faults.RecordCleanup(ex);
                 }
-                catch (Exception ex) { faults.RecordCleanup(ex); }
+                catch (Exception ex)
+                {
+                    joined = worker.IsCompleted;
+                    faults.RecordCleanup(ex);
+                }
                 // Always attempt both closes even when join or a close failed.
                 if (oracle.NeedsClose(otherId))
                     faults.TryCleanup(() => Close(other, otherId, oracle));
@@ -451,8 +516,7 @@ internal static class F18TimeoutCleanupTests
                     faults.TryCleanup(() => Close(owned, ownedId, oracle));
             }
             if (!joined || !worker.IsCompleted)
-                throw new AggregateException("F18 pending worker after teardown; observer timeout is not completion",
-                    faults.Cleanup.Append(new TimeoutException("F18 worker completion unconfirmed")));
+                throw faults.Combined(new TimeoutException("F18 worker completion unconfirmed"));
             if (!safe.IsClosed || !owned.SafeWaitHandle.IsClosed || !other.SafeWaitHandle.IsClosed)
                 throw new Exception("F18 native resource not closed after join");
             oracle.AssertSettled();
