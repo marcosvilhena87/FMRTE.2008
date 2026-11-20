@@ -20,7 +20,11 @@ F09 reforça exclusivamente a abertura **somente leitura**. O catálogo de produ
 - cancelamento após aquisição e antes da publicação;
 - falha da segunda inspeção com descarte único;
 - token previamente cancelado bloqueando aquisição;
-- recuperação por nova sessão independente.
+- recuperação por nova sessão independente;
+- cancelamento enquanto a segunda inspeção está suspensa, com liberação única do recurso;
+- duas aberturas concorrentes do mesmo PID com handles distintos: falha de uma não descarta o handle da outra.
+
+As corridas são sincronizadas por `TaskCompletionSource` (sem `Sleep`).
 
 ## Limitações documentadas
 - A verificação antes/depois **não é atômica** com a abertura Win32: entre o último check e uma leitura pode ocorrer encerramento ou mudança do processo, que deve falhar fechada pelas regras de sessão.
