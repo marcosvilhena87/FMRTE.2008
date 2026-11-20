@@ -73,6 +73,7 @@ internal static class BudgetDisposeRaceTests
             await Reject<OperationCanceledException>(() =>
                 canceledBefore.ReadAsync((nuint)0x1000, 8, cts.Token));
             Check(never.Calls == 0, "Pre-canceled read reached source");
+            never.Release.TrySetResult(true);
             Check((await canceledBefore.ReadAsync((nuint)0x1000, 8, default))
                 .Length == 8, "Pre-cancellation wrongly consumed budget");
         }
