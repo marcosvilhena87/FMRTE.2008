@@ -90,21 +90,16 @@
               "minLength": 1
             },
             "criteria": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "pattern": "^A(0[1-9]|1[0-2])$"
-              },
-              "minItems": 1,
-              "uniqueItems": true
+              "const": [
+                "A01",
+                "A02"
+              ]
             },
             "risks": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "pattern": "^RA-0[1-8]$"
-              },
-              "uniqueItems": true
+              "const": [
+                "RA-01",
+                "RA-06"
+              ]
             },
             "documentaryStatus": {
               "const": "PENDING"
@@ -116,35 +111,20 @@
               "const": "historical-user-report-plus-offline-ci-not-equivalent"
             },
             "evidenceReferences": {
-              "type": "array",
-              "minItems": 1,
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": [
-                  "observationId",
-                  "sourcePath",
-                  "sourceBlobSha",
-                  "provenanceStatus"
-                ],
-                "properties": {
-                  "observationId": {
-                    "type": "string",
-                    "pattern": "^R0[1-7]$"
-                  },
-                  "sourcePath": {
-                    "type": "string",
-                    "minLength": 10
-                  },
-                  "sourceBlobSha": {
-                    "type": "string",
-                    "pattern": "^[0-9a-f]{40}$"
-                  },
-                  "provenanceStatus": {
-                    "const": "PENDING-DECLARED"
-                  }
+              "const": [
+                {
+                  "observationId": "R01",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+                  "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+                  "provenanceStatus": "PENDING-DECLARED"
+                },
+                {
+                  "observationId": "R02",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+                  "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+                  "provenanceStatus": "PENDING-DECLARED"
                 }
-              }
+              ]
             },
             "documentedContext": {
               "type": "string",
@@ -180,21 +160,17 @@
               "minLength": 1
             },
             "criteria": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "pattern": "^A(0[1-9]|1[0-2])$"
-              },
-              "minItems": 1,
-              "uniqueItems": true
+              "const": [
+                "A03",
+                "A04",
+                "A05",
+                "A10"
+              ]
             },
             "risks": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "pattern": "^RA-0[1-8]$"
-              },
-              "uniqueItems": true
+              "const": [
+                "RA-05"
+              ]
             },
             "documentaryStatus": {
               "const": "PENDING"
@@ -206,35 +182,26 @@
               "const": "historical-user-report-plus-offline-ci-not-equivalent"
             },
             "evidenceReferences": {
-              "type": "array",
-              "minItems": 1,
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": [
-                  "observationId",
-                  "sourcePath",
-                  "sourceBlobSha",
-                  "provenanceStatus"
-                ],
-                "properties": {
-                  "observationId": {
-                    "type": "string",
-                    "pattern": "^R0[1-7]$"
-                  },
-                  "sourcePath": {
-                    "type": "string",
-                    "minLength": 10
-                  },
-                  "sourceBlobSha": {
-                    "type": "string",
-                    "pattern": "^[0-9a-f]{40}$"
-                  },
-                  "provenanceStatus": {
-                    "const": "PENDING-DECLARED"
-                  }
+              "const": [
+                {
+                  "observationId": "R03",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+                  "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+                  "provenanceStatus": "PENDING-DECLARED"
+                },
+                {
+                  "observationId": "R04",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-r04-profile-checks.csv",
+                  "sourceBlobSha": "45d50af819f0429e1bf887fee4b908e262b88d49",
+                  "provenanceStatus": "PENDING-DECLARED"
+                },
+                {
+                  "observationId": "R07",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-r07-consolidation.md",
+                  "sourceBlobSha": "5af5157240def9b9b31d2a9533377f89892b94a6",
+                  "provenanceStatus": "PENDING-DECLARED"
                 }
-              }
+              ]
             },
             "documentedContext": {
               "type": "string",
@@ -270,21 +237,18 @@
               "minLength": 1
             },
             "criteria": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "pattern": "^A(0[1-9]|1[0-2])$"
-              },
-              "minItems": 1,
-              "uniqueItems": true
+              "const": [
+                "A06",
+                "A07",
+                "A08"
+              ]
             },
             "risks": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "pattern": "^RA-0[1-8]$"
-              },
-              "uniqueItems": true
+              "const": [
+                "RA-02",
+                "RA-03",
+                "RA-04"
+              ]
             },
             "documentaryStatus": {
               "const": "PENDING"
@@ -296,35 +260,26 @@
               "const": "historical-user-report-plus-offline-ci-not-equivalent"
             },
             "evidenceReferences": {
-              "type": "array",
-              "minItems": 1,
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": [
-                  "observationId",
-                  "sourcePath",
-                  "sourceBlobSha",
-                  "provenanceStatus"
-                ],
-                "properties": {
-                  "observationId": {
-                    "type": "string",
-                    "pattern": "^R0[1-7]$"
-                  },
-                  "sourcePath": {
-                    "type": "string",
-                    "minLength": 10
-                  },
-                  "sourceBlobSha": {
-                    "type": "string",
-                    "pattern": "^[0-9a-f]{40}$"
-                  },
-                  "provenanceStatus": {
-                    "const": "PENDING-DECLARED"
-                  }
+              "const": [
+                {
+                  "observationId": "R05",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-r05-week-advance-2026-11-18.md",
+                  "sourceBlobSha": "6f9be7702e01e4023aef95d1efa540c399887d1f",
+                  "provenanceStatus": "PENDING-DECLARED"
+                },
+                {
+                  "observationId": "R06",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-r06-normal-restart-2026-11-18.md",
+                  "sourceBlobSha": "89a1dae5102062d5e880158a7aa485a1483b028c",
+                  "provenanceStatus": "PENDING-DECLARED"
+                },
+                {
+                  "observationId": "R07",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-r07-consolidation.md",
+                  "sourceBlobSha": "5af5157240def9b9b31d2a9533377f89892b94a6",
+                  "provenanceStatus": "PENDING-DECLARED"
                 }
-              }
+              ]
             },
             "documentedContext": {
               "type": "string",
@@ -360,21 +315,16 @@
               "minLength": 1
             },
             "criteria": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "pattern": "^A(0[1-9]|1[0-2])$"
-              },
-              "minItems": 1,
-              "uniqueItems": true
+              "const": [
+                "A09",
+                "A11"
+              ]
             },
             "risks": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "pattern": "^RA-0[1-8]$"
-              },
-              "uniqueItems": true
+              "const": [
+                "RA-07",
+                "RA-08"
+              ]
             },
             "documentaryStatus": {
               "const": "PENDING"
@@ -386,35 +336,20 @@
               "const": "historical-user-report-plus-offline-ci-not-equivalent"
             },
             "evidenceReferences": {
-              "type": "array",
-              "minItems": 1,
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": [
-                  "observationId",
-                  "sourcePath",
-                  "sourceBlobSha",
-                  "provenanceStatus"
-                ],
-                "properties": {
-                  "observationId": {
-                    "type": "string",
-                    "pattern": "^R0[1-7]$"
-                  },
-                  "sourcePath": {
-                    "type": "string",
-                    "minLength": 10
-                  },
-                  "sourceBlobSha": {
-                    "type": "string",
-                    "pattern": "^[0-9a-f]{40}$"
-                  },
-                  "provenanceStatus": {
-                    "const": "PENDING-DECLARED"
-                  }
+              "const": [
+                {
+                  "observationId": "R01",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+                  "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+                  "provenanceStatus": "PENDING-DECLARED"
+                },
+                {
+                  "observationId": "R07",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-r07-consolidation.md",
+                  "sourceBlobSha": "5af5157240def9b9b31d2a9533377f89892b94a6",
+                  "provenanceStatus": "PENDING-DECLARED"
                 }
-              }
+              ]
             },
             "documentedContext": {
               "type": "string",
@@ -450,21 +385,12 @@
               "minLength": 1
             },
             "criteria": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "pattern": "^A(0[1-9]|1[0-2])$"
-              },
-              "minItems": 1,
-              "uniqueItems": true
+              "const": [
+                "A12"
+              ]
             },
             "risks": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "pattern": "^RA-0[1-8]$"
-              },
-              "uniqueItems": true
+              "const": []
             },
             "documentaryStatus": {
               "const": "PENDING"
@@ -476,35 +402,50 @@
               "const": "historical-user-report-plus-offline-ci-not-equivalent"
             },
             "evidenceReferences": {
-              "type": "array",
-              "minItems": 1,
-              "items": {
-                "type": "object",
-                "additionalProperties": false,
-                "required": [
-                  "observationId",
-                  "sourcePath",
-                  "sourceBlobSha",
-                  "provenanceStatus"
-                ],
-                "properties": {
-                  "observationId": {
-                    "type": "string",
-                    "pattern": "^R0[1-7]$"
-                  },
-                  "sourcePath": {
-                    "type": "string",
-                    "minLength": 10
-                  },
-                  "sourceBlobSha": {
-                    "type": "string",
-                    "pattern": "^[0-9a-f]{40}$"
-                  },
-                  "provenanceStatus": {
-                    "const": "PENDING-DECLARED"
-                  }
+              "const": [
+                {
+                  "observationId": "R01",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+                  "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+                  "provenanceStatus": "PENDING-DECLARED"
+                },
+                {
+                  "observationId": "R02",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+                  "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+                  "provenanceStatus": "PENDING-DECLARED"
+                },
+                {
+                  "observationId": "R03",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+                  "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+                  "provenanceStatus": "PENDING-DECLARED"
+                },
+                {
+                  "observationId": "R04",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-r04-profile-checks.csv",
+                  "sourceBlobSha": "45d50af819f0429e1bf887fee4b908e262b88d49",
+                  "provenanceStatus": "PENDING-DECLARED"
+                },
+                {
+                  "observationId": "R05",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-r05-week-advance-2026-11-18.md",
+                  "sourceBlobSha": "6f9be7702e01e4023aef95d1efa540c399887d1f",
+                  "provenanceStatus": "PENDING-DECLARED"
+                },
+                {
+                  "observationId": "R06",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-r06-normal-restart-2026-11-18.md",
+                  "sourceBlobSha": "89a1dae5102062d5e880158a7aa485a1483b028c",
+                  "provenanceStatus": "PENDING-DECLARED"
+                },
+                {
+                  "observationId": "R07",
+                  "sourcePath": "research/builds/fm2008-8.0.2v1-r07-consolidation.md",
+                  "sourceBlobSha": "5af5157240def9b9b31d2a9533377f89892b94a6",
+                  "provenanceStatus": "PENDING-DECLARED"
                 }
-              }
+              ]
             },
             "documentedContext": {
               "type": "string",
@@ -516,7 +457,8 @@
             }
           }
         }
-      ]
+      ],
+      "items": false
     }
   }
 }

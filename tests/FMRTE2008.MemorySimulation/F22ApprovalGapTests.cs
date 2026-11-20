@@ -36,16 +36,7 @@ internal static class F22ApprovalGapTests
         ["R01", "R07"],
         ["R01", "R02", "R03", "R04", "R05", "R06", "R07"]
     ];
-    private static readonly (string Id, string Path, string Blob)[] Source =
-    [
-        ("R01", "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md", "fcbdffa2b846af2a36feaebca25b59a27f7c0912"),
-        ("R02", "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md", "fcbdffa2b846af2a36feaebca25b59a27f7c0912"),
-        ("R03", "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md", "fcbdffa2b846af2a36feaebca25b59a27f7c0912"),
-        ("R04", "research/builds/fm2008-8.0.2v1-first-save-r04-profile-checks.csv", "45d50af819f0429e1bf887fee4b908e262b88d49"),
-        ("R05", "research/builds/fm2008-8.0.2v1-r05-week-advance-2026-11-18.md", "6f9be7702e01e4023aef95d1efa540c399887d1f"),
-        ("R06", "research/builds/fm2008-8.0.2v1-r06-normal-restart-2026-11-18.md", "89a1dae5102062d5e880158a7aa485a1483b028c"),
-        ("R07", "research/builds/fm2008-8.0.2v1-r07-consolidation.md", "5af5157240def9b9b31d2a9533377f89892b94a6")
-    ];
+
 
     internal static void Run()
     {
@@ -54,14 +45,28 @@ internal static class F22ApprovalGapTests
         byte[] raw = File.ReadAllBytes(path);
         string digest = Convert.ToHexString(SHA256.HashData(raw)).ToLowerInvariant();
         var document = JsonNode.Parse(raw) ?? throw new InvalidDataException("F22 null matrix");
-        Validate(document);
+        string f21path = Path.Combine(root, "tests", "FMRTE2008.MemorySimulation", "F21B03Evidence.json");
+        byte[] f21bytes = File.ReadAllBytes(f21path);
+        var f21 = JsonNode.Parse(f21bytes) ?? throw new InvalidDataException("F22 missing F21 inventory");
+        Validate(document, f21);
+        string f21Digest = Convert.ToHexString(SHA256.HashData(f21bytes)).ToLowerInvariant();
+        string? mutationDir = null;
+        if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
+        {
+            string runnerTemp = Environment.GetEnvironmentVariable("RUNNER_TEMP")
+                ?? throw new InvalidDataException("F22 missing runner temp");
+            mutationDir = Path.Combine(runnerTemp, "f20-evidence", "f22-schema-cases");
+            Directory.CreateDirectory(mutationDir);
+        }
         int rejected = 0;
         var cases = new List<object>();
         void Reject(string id, Action<JsonNode> change)
         {
             var altered = document.DeepClone();
             change(altered);
-            try { Validate(altered); }
+            if (mutationDir is not null)
+                File.WriteAllText(Path.Combine(mutationDir, id + ".json"), altered.ToJsonString());
+            try { Validate(altered, f21); }
             catch (InvalidDataException ex)
             {
                 rejected++;
@@ -100,7 +105,36 @@ internal static class F22ApprovalGapTests
         Reject("empty-context", x => x["gates"]![1]!["documentedContext"] = "");
         Reject("schema-version", x => x["schemaVersion"] = 2);
         Reject("new-legacy-offset", x => x["legacyOffsets"] = new JsonArray(256, 280, 284));
-        if (rejected != 28 || cases.Count != 28) throw new InvalidDataException("F22 mutation inventory mismatch");
+        Reject("valid-sha-wrong-blob", x => x["gates"]![0]!["evidenceReferences"]![0]!["sourceBlobSha"] = new string('a',40));
+        Reject("swap-reference-order", x =>
+        {
+            var arr = x["gates"]![0]!["evidenceReferences"]!.AsArray();
+            var item = arr[0]!.DeepClone();
+            arr[0] = arr[1]!.DeepClone();
+            arr[1] = item;
+        });
+        Reject("swap-gate-criteria", x => x["gates"]![0]!["criteria"] = x["gates"]![3]!["criteria"]!.DeepClone());
+        Reject("swap-gate-risks", x => x["gates"]![0]!["risks"] = x["gates"]![2]!["risks"]!.DeepClone());
+        int f21Rejected = 0;
+        void RejectF21(string id, Action<JsonNode> change)
+        {
+            var altered = f21.DeepClone();
+            change(altered);
+            try { Validate(document, altered); }
+            catch (InvalidDataException)
+            {
+                f21Rejected++;
+                Console.WriteLine("OK F22 F21 LINK NEG " + id);
+                return;
+            }
+            throw new Exception("F22 F21 linkage mutation accepted: " + id);
+        }
+        RejectF21("changed-source-commit", x => x["sourceCommit"] = new string('0',40));
+        RejectF21("fabricated-executor", x => x["observations"]![0]!["executor"] = "CI");
+        RejectF21("invented-source-path", x => x["observations"]![3]!["sourcePath"] = "invented.md");
+        RejectF21("invented-source-blob", x => x["observations"]![4]!["sourceBlobSha"] = new string('f',40));
+        if (f21Rejected != 4) throw new InvalidDataException("F22 F21 linkage negative inventory incomplete");
+        if (rejected != 32 || cases.Count != 32) throw new InvalidDataException("F22 mutation inventory mismatch");
 
         if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true")
         {
@@ -111,21 +145,46 @@ internal static class F22ApprovalGapTests
             File.Copy(path, Path.Combine(folder, "F22ApprovalGates.json"), true);
             File.WriteAllText(Path.Combine(folder, "F22ApprovalGateValidation.json"),
                 JsonSerializer.Serialize(new {schemaVersion=1, evidenceKind=Kind,
-                    matrixSha256=digest, gateCount=Ids.Length, rejectedMutations=rejected,
-                    negativeCases=cases, approved=false, operational=false,
+                    matrixSha256=digest, f21Sha256=f21Digest, gateCount=Ids.Length, rejectedMutations=rejected,
+                    negativeCases=cases, f21LinkNegativesRejected=f21Rejected, approved=false, operational=false,
                     b03="PENDING-DECLARED", gateA12="GATE-BLOQUEADO", humanApproval=false },
                     new JsonSerializerOptions { WriteIndented=true }));
         }
         Console.WriteLine($"OK F22: G1-G5=5, references validated, negatives={rejected}, sha256={digest}, approved=false operational=false");
     }
 
-    private static void Validate(JsonNode root)
+    private static void Validate(JsonNode root, JsonNode f21)
     {
         try
         {
             Keys(root, "schemaVersion","kind","mappingSource","decision","gates");
             if (root["schemaVersion"]!.GetValue<int>() != 1 || S(root,"kind") != Kind)
                 throw new InvalidDataException("F22 schema mismatch");
+            Keys(f21,"schemaVersion","kind","sourceRepo","sourceCommit","approval","observations");
+            if (f21["schemaVersion"]!.GetValue<int>() != 1 ||
+                S(f21,"kind") != "historical-evidence-inventory-not-operational" ||
+                S(f21,"sourceRepo") != MapRepo || S(f21,"sourceCommit") != MapCommit)
+                throw new InvalidDataException("F22 F21 source identity mismatch");
+            var f21Approval=f21["approval"]!;
+            Keys(f21Approval,"approved","operational","gateA12","decisionReference");
+            if (f21Approval["approved"]!.GetValue<bool>() ||
+                f21Approval["operational"]!.GetValue<bool>() ||
+                S(f21Approval,"gateA12") != "blocked" ||
+                f21Approval["decisionReference"] is not null)
+                throw new InvalidDataException("F22 F21 approval mismatch");
+            var f21Rows=f21["observations"]!.AsArray();
+            if (f21Rows.Count != 7) throw new InvalidDataException("F22 F21 incomplete evidence registry");
+            for (int j=0;j<7;j++)
+            {
+                var row = f21Rows[j] ?? throw new InvalidDataException("F22 F21 null observation");
+                if (S(row,"observationId") != "R0" + (j+1) ||
+                    S(row,"sourceRepo") != MapRepo || S(row,"sourceCommit") != MapCommit ||
+                    S(row,"provenanceStatus") != "PENDING-DECLARED" ||
+                    row["executor"] is not null || row["observedAt"] is not null ||
+                    row["environment"] is not null || row["collectionMethod"] is not null ||
+                    row["externalCorroboration"] is not null)
+                    throw new InvalidDataException("F22 F21 untrusted historical attribution");
+            }
             var source = root["mappingSource"]!;
             Keys(source, "repository","commit");
             if (S(source,"repository") != MapRepo || S(source,"commit") != MapCommit)
@@ -159,10 +218,10 @@ internal static class F22ApprovalGapTests
                     var e = references[n] ?? throw new InvalidDataException("F22 null reference");
                     Keys(e,"observationId","sourcePath","sourceBlobSha","provenanceStatus");
                     string id = ExpectedObservations[i][n];
-                    var original = Source.Single(s => s.Id == id);
+                    var original = f21Rows[int.Parse(id.AsSpan(1)) - 1]!;
                     if (S(e,"observationId") != id ||
-                        S(e,"sourcePath") != original.Path ||
-                        S(e,"sourceBlobSha") != original.Blob ||
+                        S(e,"sourcePath") != S(original,"sourcePath") ||
+                        S(e,"sourceBlobSha") != S(original,"sourceBlobSha") ||
                         S(e,"provenanceStatus") != "PENDING-DECLARED")
                         throw new InvalidDataException("F22 invalid historical reference");
                 }
