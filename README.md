@@ -1,4 +1,4 @@
-# FMRTE2008
+# FMRTE.2008
 
 Editor Windows em desenvolvimento para leitura/edição assistida de dados do Football Manager 2008.
 
