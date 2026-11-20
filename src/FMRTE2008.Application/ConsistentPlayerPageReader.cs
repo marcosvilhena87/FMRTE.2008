@@ -69,6 +69,17 @@ public sealed class ConsistentPlayerPageReader(IProcessReader memory, MinimalPla
                 throw new InvalidDataException("F05: página alterada após leitura dos registros");
         }
         await ConfirmHeaderAsync();
+        // A change to an earlier slot while a later slot was being checked
+        // in the forward sweep can be observed by an additional reverse sweep.
+        // Finite sweeps are not an atomic snapshot and cannot eliminate ABA.
+        for (int i = end - 1; i >= (int)start; i--)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (await pointers.ReadPointerAtIndexAsync(header.TableAddress, i, header.Count, ct) !=
+                expected[i - (int)start])
+                throw new InvalidDataException("F05: ponteiro divergiu durante a conferência final");
+        }
+        await ConfirmHeaderAsync();
         ct.ThrowIfCancellationRequested();
         return records.AsReadOnly();
 
