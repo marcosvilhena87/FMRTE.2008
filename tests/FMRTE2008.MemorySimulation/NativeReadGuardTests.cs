@@ -15,7 +15,7 @@ internal static class NativeReadGuardTests
             checks++;
         }
         var identity = new ProcessHandleIdentity(123, 638000000000000000);
-        const nuint address = 0x1000;
+        nuint address = (nuint)0x1000;
         const int length = 8;
 
         // Happy path and single disposal.
@@ -56,7 +56,7 @@ internal static class NativeReadGuardTests
         await FailedNative("native failure", new NativeReadOutcome(false, 0, 5),
             typeof(Win32Exception));
         await FailedNative("native failure with claimed full count",
-            new NativeReadOutcome(false, length, 299), typeof(Win32Exception));
+            new NativeReadOutcome(false, (nuint)length, 299), typeof(Win32Exception));
         await FailedNative("partial success", new NativeReadOutcome(true, 4, 0),
             typeof(InvalidDataException));
         await FailedNative("zero bytes", new NativeReadOutcome(true, 0, 0),
