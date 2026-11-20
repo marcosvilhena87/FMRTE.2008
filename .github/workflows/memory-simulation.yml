@@ -12,3 +12,5 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Compilar e executar testes com memoria simulada
         run: dotnet run --project tests/FMRTE2008.MemorySimulation/FMRTE2008.MemorySimulation.csproj --configuration Release
+      - name: F16 - robustez de handles Windows locais sem fm.exe
+        run: dotnet run --project tests/FMRTE2008.WindowsResilience/FMRTE2008.WindowsResilience.csproj --configuration Release
