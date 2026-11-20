@@ -112,6 +112,60 @@ await Test("F01: amostras divergentes retornam falha", () =>
     Equal(1, ReadOnlyProbeExitPolicy.FromStability(false));
     return Task.CompletedTask;
 });
+// F01: exercise the exact comparison routine used by the read-only probe.
+// These fixtures have no process handle and cannot access the game.
+await Test("F01: duas amostras equivalentes retornam sucesso", () =>
+{
+    var first = F01Sample();
+    var second = F01Sample();
+    Equal(0, ReadOnlyProbeExitPolicy.FromSamples(new[] { first, second }));
+    return Task.CompletedTask;
+});
+await Test("F01: tabela alterada rejeitada", () =>
+{
+    var first = F01Sample();
+    Equal(1, ReadOnlyProbeExitPolicy.FromSamples(new[] { first, first with { Table = 0x2500u } }));
+    return Task.CompletedTask;
+});
+await Test("F01: quantidade alterada rejeitada", () =>
+{
+    var first = F01Sample();
+    Equal(1, ReadOnlyProbeExitPolicy.FromSamples(new[] { first, first with { Count = 3 } }));
+    return Task.CompletedTask;
+});
+await Test("F01: ponteiro de jogador alterado rejeitado", () =>
+{
+    var first = F01Sample();
+    var changed = first with { Records = new[] { first.Records[0] with { Pointer = 0x3500u }, first.Records[1] } };
+    Equal(1, ReadOnlyProbeExitPolicy.FromSamples(new[] { first, changed }));
+    return Task.CompletedTask;
+});
+await Test("F01: ID de jogador alterado rejeitado", () =>
+{
+    var first = F01Sample();
+    var changed = first with { Records = new[] { first.Records[0], first.Records[1] with { Id = 999 } } };
+    Equal(1, ReadOnlyProbeExitPolicy.FromSamples(new[] { first, changed }));
+    return Task.CompletedTask;
+});
+await Test("F01: nome alterado rejeitado", () =>
+{
+    var first = F01Sample();
+    var changed = first with { Records = new[] { first.Records[0] with { Common = "Outro" }, first.Records[1] } };
+    Equal(1, ReadOnlyProbeExitPolicy.FromSamples(new[] { first, changed }));
+    return Task.CompletedTask;
+});
+await Test("F01: tamanho da lista alterado rejeitado", () =>
+{
+    var first = F01Sample();
+    var changed = first with { Records = new[] { first.Records[0] } };
+    Equal(1, ReadOnlyProbeExitPolicy.FromSamples(new[] { first, changed }));
+    return Task.CompletedTask;
+});
+await Test("F01: amostragem vazia não declara sucesso", () =>
+{
+    Equal(1, ReadOnlyProbeExitPolicy.FromSamples(Array.Empty<ReadOnlyProbeSample>()));
+    return Task.CompletedTask;
+});
 BuildRecognitionTests.Run();
 await VerifiedSessionTests.RunAsync();
 await MinimalIdentityTests.RunAsync();
@@ -145,6 +199,13 @@ static void ThrowsSync<T>(Action action) where T : Exception
     catch (T) { return; }
     throw new Exception($"Era esperada a exceção {typeof(T).Name}");
 }
+static ReadOnlyProbeSample F01Sample() =>
+    new(0x2000u, 2, new[]
+    {
+        new ReadOnlyProbePlayer(0x3000u, 101, "Ana", "Silva", "Ana"),
+        new ReadOnlyProbePlayer(0x4000u, 202, "Bia", "Souza", "Bia")
+    });
+
 static (SimulatedProcessMemory, uint) MakeFixture()
 {
     var mem = new SimulatedProcessMemory();
