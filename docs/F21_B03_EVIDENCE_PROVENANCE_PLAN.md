@@ -41,3 +41,10 @@ Não abrir `fm.exe` operacionalmente, não conectar fonte real à WPF, não escr
 
 ## Estado
 F21 iniciado **somente pelo planejamento rastreável**. A coleta retroativa de executor, data e ambiente é pendente e pode exigir evidência primária do usuário. Nenhum metadado histórico foi preenchido automaticamente.
+
+## Revisão F21-R01/R02/R03 — correções implementadas, condicionadas à revisão CI
+
+- **R01 — granularidade:** cada R01–R07 tem `reportedResult` individual, estritamente documental, e `sourceEvidenceStatus=user-reported-not-independently-audited`. Não afirmar que esses resultados são observações independentes; preservar `null` para os cinco campos históricos desconhecidos.
+- **R02 — identidade documental:** gravar `sourceBlobSha` (Git blob SHA-1, identificador de objeto Git, NÃO SHA-256 do conteúdo) para cada fonte do commit imutável `df5be0493a1ac7be57208ff0e91c2d7193dfec73`; durante CI, consultar via GET a árvore Git pública dessa revisão, recusar árvore truncada, fonte ausente ou hash divergente. A verificação externa estabelece a identidade do documento, não a autenticidade da observação humana.
+- **R03 — resultados individuais:** exportar cada mutação adversarial estruturada com `caseId`, `expectedOutcome`, `actualOutcome`, `result`, `reasonCode`, além de total agregado. Inventário agora contém 29 mutações negativas. Proibir suprimir uma mutação e manter o total.
+- **Limites:** F21 não resolve B03 e não aprova leitura operacional, offsets ou edição. Não modificar o repositório de pesquisa nem dados do FM2008.
