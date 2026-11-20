@@ -98,6 +98,92 @@ internal static class NativeReadGuardTests
         Check(mismatchCloses == 1, "identity mismatch leaked handle");
         Check(inspections == 2, "identity not inspected twice");
 
+        // A standalone native identity query is a resource operation too:
+        // an exception must poison and close exactly once.
+        int identityFailureCloses = 0, identityFailureReads = 0;
+        var identityFailure = new NativeReadOnlyGuard(
+            () => throw new IOException("GetProcessTimes failed"),
+            (_, buffer, _) =>
+            {
+                identityFailureReads++;
+                return Task.FromResult(new NativeReadOutcome(true, (nuint)buffer.Length, 0));
+            }, () => identityFailureCloses++);
+        await Reject<IOException>(() => Task.Run(() =>
+            identityFailure.GetLiveHandleIdentity()));
+        Check(identityFailureCloses == 1, "standalone inspection error leaked handle");
+        await Reject<ObjectDisposedException>(() =>
+            identityFailure.ReadAsync(address, length, default));
+        Check(identityFailureReads == 0, "failed inspection allowed native read");
+        identityFailure.Dispose();
+        Check(identityFailureCloses == 1, "failed inspection closed twice");
+
+        // If a read already holds a lease, a concurrent failing inspection
+        // must poison the session without closing the handle prematurely.
+        var inspectEntered = NewSignal();
+        var inspectRelease = NewSignal();
+        int deferredCloses = 0, deferredChecks = 0;
+        var deferred = new NativeReadOnlyGuard(
+            () =>
+            {
+                if (Interlocked.Increment(ref deferredChecks) > 1)
+                    throw new IOException("Handle identity failed");
+                return identity;
+            },
+            async (_, buffer, _) =>
+            {
+                inspectEntered.TrySetResult(true);
+                await inspectRelease.Task;
+                return new NativeReadOutcome(true, (nuint)buffer.Length, 0);
+            }, () => Interlocked.Increment(ref deferredCloses));
+        var underRead = deferred.ReadAsync(address, length, default);
+        await inspectEntered.Task;
+        await Reject<IOException>(() => Task.Run(() =>
+            deferred.GetLiveHandleIdentity()));
+        Check(Volatile.Read(ref deferredCloses) == 0,
+            "identity failure closed handle while read was pending");
+        await Task.WhenAll(Task.Run(deferred.Dispose), Task.Run(deferred.Dispose));
+        inspectRelease.TrySetResult(true);
+        await Reject<ObjectDisposedException>(() => underRead);
+        Check(Volatile.Read(ref deferredCloses) == 1,
+            "concurrent identity failure/Dispose not closed exactly once");
+
+        // Failure of the FIRST or SECOND identity check inside ReadAsync
+        // must invalidate the session and reject all future reads.
+        foreach (int failOn in new[] { 1, 2 })
+        {
+            int readInspections = 0, readCloses = 0, nativeCalls = 0;
+            var guard = new NativeReadOnlyGuard(
+                () =>
+                {
+                    if (++readInspections == failOn)
+                        throw new IOException("Identity query failed");
+                    return identity;
+                },
+                (_, buffer, _) =>
+                {
+                    nativeCalls++;
+                    return Task.FromResult(new NativeReadOutcome(true, (nuint)buffer.Length, 0));
+                }, () => readCloses++);
+            await Reject<IOException>(() => guard.ReadAsync(address, length, default));
+            Check(nativeCalls == failOn - 1,
+                "read reached native provider with an invalid initial identity");
+            Check(readCloses == 1, "read identity error leaked or double-closed");
+            await Reject<ObjectDisposedException>(() => guard.ReadAsync(address, length, default));
+        }
+
+        // Even if a release callback throws, it must not be invoked twice.
+        int throwingCloseCalls = 0;
+        var closeFault = new NativeReadOnlyGuard(() => identity,
+            (_, buffer, _) => Task.FromResult(new NativeReadOutcome(true, (nuint)buffer.Length, 0)),
+            () =>
+            {
+                throwingCloseCalls++;
+                throw new IOException("Close failed");
+            });
+        await Reject<IOException>(() => Task.Run(closeFault.Dispose));
+        closeFault.Dispose();
+        Check(throwingCloseCalls == 1, "throwing close callback invoked repeatedly");
+
         // Provider exceptions fail closed regardless of exception type.
         int unexpectedCloses = 0;
         var unexpected = new NativeReadOnlyGuard(() => identity,
