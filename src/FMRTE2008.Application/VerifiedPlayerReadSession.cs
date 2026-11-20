@@ -73,7 +73,18 @@ public sealed class VerifiedPlayerReadSession : IDisposable
         // O opener deverá comparar novamente o executável do PID, não confiar apenas no parâmetro identity.
         var memory = await opener.OpenVerifiedAsync(processId, identity, cancellationToken);
         if (memory is null) throw new InvalidOperationException("O opener não forneceu sessão");
-        return new VerifiedPlayerReadSession(memory, map);
+        try
+        {
+            // A cancellation may occur while the opener is returning its
+            // handle. Never publish such a session or leak the acquired handle.
+            cancellationToken.ThrowIfCancellationRequested();
+            return new VerifiedPlayerReadSession(memory, map);
+        }
+        catch
+        {
+            memory.Dispose();
+            throw;
+        }
     }
 
     public async Task<PlayerIdRecord> ReadFirstPlayerIdAsync(CancellationToken cancellationToken = default)
