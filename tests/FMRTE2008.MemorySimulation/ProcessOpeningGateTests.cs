@@ -94,6 +94,22 @@ internal static class ProcessOpeningGateTests
             _ => Task.FromResult<IProcessReadSession>(broken)), typeof(IOException));
         Check(broken.Disposes == 1, "post-acquisition inspection failure leaked source");
 
+        int failingAcquisitions = 0;
+        await Reject(() => VerifiedProcessOpeningGate.OpenAsync(123, expected,
+            _ => Task.FromResult(original),
+            _ =>
+            {
+                failingAcquisitions++;
+                throw new IOException("Acquire failed before returning a resource");
+            }), typeof(IOException));
+        Check(failingAcquisitions == 1, "acquisition failure retried implicitly");
+
+        await Reject(() => VerifiedProcessOpeningGate.OpenAsync(123, expected,
+            _ => Task.FromResult(original),
+            _ => Task.FromResult<IProcessReadSession>(null!)),
+            typeof(InvalidOperationException));
+        Check(failingAcquisitions == 1, "null acquisition modified earlier state");
+
         int deniedAcquires = 0;
         using (var preCanceled = new CancellationTokenSource())
         {
