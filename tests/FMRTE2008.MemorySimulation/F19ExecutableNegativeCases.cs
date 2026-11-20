@@ -15,6 +15,7 @@ internal static class F19ExecutableNegativeCases
     internal static async Task RunAsync()
     {
         _passed = 0;
+        F20ExecutionEvidence.Reset();
         var known = new ExecutableIdentity(SupportedBuildCatalog.Known802Sha256,
             "8.0.2", 52395, "x86");
 
