@@ -125,9 +125,45 @@ def validate_existing_reports(m):
         require(data["approved"] is False and data["operational"] is False, stage+" CI approval")
         records.append({"stage":stage,"report":name,"sourceSha256":entry["sha256"],
                         "negativeCasesRejected":total,"uniqueCaseIds":total,"result":"verified"})
+    # Verify F21 as strictly as the later stages: no default count and no missing IDs.
     f21r=json.loads((EVIDENCE/"F21B03Validation.json").read_text(encoding="utf-8"))
-    require(f21r.get("negativeCasesRejected", f21r.get("negativeMutationsRejected", 29)) == 29 or
-            len(f21r.get("negativeCases",[])) == 29, "F21 29 negatives not present")
+    f21entry=next(x for x in m["sources"] if x["stage"]=="F21")
+    f21cases=f21r["negativeCases"]
+    f21ids=[x["caseId"] for x in f21cases]
+    require(f21r["manifestSha256"]==f21entry["sha256"], "F21 report hash")
+    require(f21r["negativeMutationsRejected"]==len(f21cases)==len(set(f21ids))==29,
+            "F21 negative completeness")
+    require(all(c["result"]=="rejected" and
+        c["actualOutcome"]==c["expectedOutcome"]=="InvalidDataException" for c in f21cases),
+        "F21 negative results")
+    require(f21r["approved"] is False and f21r["operational"] is False and
+        f21r["historicalObservationAttested"] is False, "F21 historical approval")
+    records.insert(0,{"stage":"F21","report":"F21B03Validation.json",
+        "sourceSha256":f21entry["sha256"],"negativeCasesRejected":29,
+        "uniqueCaseIds":29,"result":"verified"})
+    independent=(
+      ("F22","F22IndependentSchemaValidation.json","matrixSha256",32),
+      ("F23.1","F23IndependentSchemaValidation.json","manifestSha256",22),
+      ("F23.2","F23ResidualRiskIndependentSchemaValidation.json","registrySha256",25),
+      ("F23.3","F23HumanDecisionIndependentSchemaValidation.json","decisionSha256",28)
+    )
+    for stage,name,sha_key,total in independent:
+        result=json.loads((EVIDENCE/name).read_text(encoding="utf-8"))
+        entry=next(x for x in m["sources"] if x["stage"]==stage)
+        previous_report=next(x for x in stages if x[0]==stage)[1]
+        original=json.loads((EVIDENCE/previous_report).read_text(encoding="utf-8"))
+        their_ids=[x["caseId"] for x in result["negativeCases"]]
+        our_ids=[x["caseId"] for x in original["negativeCases"]]
+        require(result["canonicalAccepted"] is True and
+                result["negativeCasesRejected"]==len(their_ids)==len(set(their_ids))==total,
+                stage+" independent schema count")
+        require(result[sha_key]==entry["sha256"] and
+                set(their_ids)==set(our_ids),stage+" independent schema identity")
+        require(all(x["result"]=="rejected" and x["schemaErrorCount"]>0
+                    for x in result["negativeCases"]),stage+" independent schema outcomes")
+        records.append({"stage":stage+"-schema","report":name,
+           "sourceSha256":entry["sha256"],"negativeCasesRejected":total,
+           "uniqueCaseIds":total,"result":"verified"})
     ex=json.loads((EVIDENCE/"F20ExecutionEvidence.json").read_text(encoding="utf-8"))
     require(ex["workflowRunId"]==os.environ["GITHUB_RUN_ID"] and
             ex["workflowAttempt"]==os.environ["GITHUB_RUN_ATTEMPT"] and
