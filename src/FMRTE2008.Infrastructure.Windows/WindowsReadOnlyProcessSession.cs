@@ -1,79 +1,75 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
-using FMRTE2008.Domain;
 using FMRTE2008.Application;
 
 namespace FMRTE2008.Infrastructure.Windows;
 
 /// <summary>
-/// Adaptador Win32 de baixo nível, INTERNAL e somente leitura.
-/// Não pode ser usado em jogo real antes da validação da build e catálogo.
+/// Windows native read-only adapter. Never called by production while
+/// NoApprovedPlayerMaps denies all operational mappings.
 /// </summary>
 internal sealed class WindowsReadOnlyProcessSession : IProcessHandleBoundReadSession
 {
     private const uint ProcessVmRead = 0x0010;
     private const uint ProcessQueryInformation = 0x0400;
     private readonly SafeProcessHandle _handle;
+    private readonly NativeReadOnlyGuard _guard;
 
     internal WindowsReadOnlyProcessSession(int processId)
     {
-        if (processId <= 0)
-            throw new ArgumentOutOfRangeException(nameof(processId));
+        if (processId <= 0) throw new ArgumentOutOfRangeException(nameof(processId));
         _handle = Native.OpenProcess(ProcessVmRead | ProcessQueryInformation, false, processId);
         if (_handle.IsInvalid)
         {
             int error = Marshal.GetLastWin32Error();
             _handle.Dispose();
-            throw new Win32Exception(error, "Não foi possível abrir o processo para leitura");
+            throw new Win32Exception(error, "Não foi possível abrir processo para leitura");
+        }
+        try
+        {
+            _guard = new NativeReadOnlyGuard(InspectHandle, ReadNativeAsync, _handle.Dispose);
+        }
+        catch
+        {
+            _handle.Dispose();
+            throw;
         }
     }
 
-    // Unlike Process.GetProcessById, these queries are against the exact
-    // acquired SafeHandle. No additional Windows access rights are requested.
-    public ProcessHandleIdentity GetLiveHandleIdentity()
+    public ProcessHandleIdentity GetLiveHandleIdentity() => _guard.GetLiveHandleIdentity();
+
+    public Task<byte[]> ReadAsync(nuint address, int length, CancellationToken ct) =>
+        _guard.ReadAsync(address, length, ct);
+
+    public void Dispose() => _guard.Dispose();
+
+    private ProcessHandleIdentity InspectHandle()
     {
         if (_handle.IsClosed || _handle.IsInvalid)
             throw new ObjectDisposedException(nameof(WindowsReadOnlyProcessSession));
         uint pid = Native.GetProcessId(_handle);
         if (pid == 0)
             throw new Win32Exception(Marshal.GetLastWin32Error(), "GetProcessId falhou");
-        if (!Native.GetProcessTimes(_handle, out long created, out long exited,
-                out _, out _))
+        if (!Native.GetProcessTimes(_handle, out long created, out _, out _, out _))
             throw new Win32Exception(Marshal.GetLastWin32Error(), "GetProcessTimes falhou");
-        // Exit time is undefined for a running process. Use GetExitCodeProcess,
-        // with the documented ambiguity when an exited process returns 259.
+        // STILL_ACTIVE=259 has a documented ambiguity with an exit code of 259.
         if (!Native.GetExitCodeProcess(_handle, out uint exitCode))
             throw new Win32Exception(Marshal.GetLastWin32Error(), "GetExitCodeProcess falhou");
         if (created <= 0 || exitCode != 259)
             throw new InvalidOperationException("Processo associado ao handle foi encerrado");
-        return new ProcessHandleIdentity(checked((int)pid),
-            DateTime.FromFileTimeUtc(created).Ticks);
+        return new ProcessHandleIdentity(checked((int)pid), DateTime.FromFileTimeUtc(created).Ticks);
     }
 
-    public Task<byte[]> ReadAsync(nuint address, int length, CancellationToken cancellationToken)
+    private Task<NativeReadOutcome> ReadNativeAsync(nuint address, byte[] buffer,
+        CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (_handle.IsClosed || _handle.IsInvalid)
-            throw new ObjectDisposedException(nameof(WindowsReadOnlyProcessSession));
-        if (address == 0 || length < 1 || length > 1024 * 1024)
-            throw new ArgumentOutOfRangeException(nameof(length), "Endereço inválido ou leitura maior que 1 MiB");
-        if (IntPtr.Size == 4 && address > uint.MaxValue)
-            throw new ArgumentOutOfRangeException(nameof(address));
-
-        GetLiveHandleIdentity(); // fail closed if the original process exited
-        byte[] buffer = new byte[length];
-        bool ok = Native.ReadProcessMemory(_handle, (nint)address, buffer, (nuint)length, out nuint read);
-        if (!ok)
-            throw new Win32Exception(Marshal.GetLastWin32Error(), "ReadProcessMemory falhou");
-        if (read != (nuint)length)
-            throw new InvalidDataException($"Leitura parcial: {read} de {length} bytes");
-        cancellationToken.ThrowIfCancellationRequested();
-        GetLiveHandleIdentity(); // do not publish bytes after process termination
-        return Task.FromResult(buffer);
+        bool ok = Native.ReadProcessMemory(_handle, (nint)address,
+            buffer, (nuint)buffer.Length, out nuint bytesRead);
+        int error = ok ? 0 : Marshal.GetLastWin32Error();
+        return Task.FromResult(new NativeReadOutcome(ok, bytesRead, error));
     }
-
-    public void Dispose() => _handle.Dispose();
 
     private sealed class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
