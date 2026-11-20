@@ -17,13 +17,23 @@ public sealed class IncrementalSearchController
     private int _generation;
     private int _inFlight;
     private readonly object _stateGate = new();
-    public bool IsFailed { get; private set; }
-    public string? FailureReason { get; private set; }
-    public int NextIndex => _cursor;
-    public int TotalCount => _count;
-    public bool Complete => _cursor >= _count;
-    public IReadOnlyList<MinimalPlayerIdentity> Matches => _matches.AsReadOnly();
-    public IReadOnlyList<PlayerReadFailure> Failures => _failures.AsReadOnly();
+    private bool _isFailed;
+    private string? _failureReason;
+    public bool IsFailed { get { lock (_stateGate) return _isFailed; } }
+    public string? FailureReason { get { lock (_stateGate) return _failureReason; } }
+    public int NextIndex { get { lock (_stateGate) return _cursor; } }
+    public int TotalCount { get { lock (_stateGate) return _count; } }
+    public bool Complete { get { lock (_stateGate) return _cursor >= _count; } }
+    // Copy instead of exposing a live wrapper over a mutable collection.
+    // A UI reader receives a stable snapshot even during Restart/NextAsync.
+    public IReadOnlyList<MinimalPlayerIdentity> Matches
+    {
+        get { lock (_stateGate) return Array.AsReadOnly(_matches.ToArray()); }
+    }
+    public IReadOnlyList<PlayerReadFailure> Failures
+    {
+        get { lock (_stateGate) return Array.AsReadOnly(_failures.ToArray()); }
+    }
 
     public IncrementalSearchController(Func<IIndexedPlayerSource> sourceFactory)
     {
@@ -55,8 +65,8 @@ public sealed class IncrementalSearchController
             _cursor = 0;
             _matches.Clear();
             _failures.Clear();
-            IsFailed = false;
-            FailureReason = null;
+            _isFailed = false;
+            _failureReason = null;
             _scanner = replacement;
             _count = replacementCount;
         }
@@ -75,7 +85,7 @@ public sealed class IncrementalSearchController
             string query;
             lock (_stateGate)
             {
-                if (IsFailed)
+                if (_isFailed)
                     throw new InvalidOperationException("Sessão encerrada; reinicie a pesquisa");
                 generation = _generation;
                 scanner = _scanner;
@@ -124,8 +134,8 @@ public sealed class IncrementalSearchController
 
     private void Invalidate(string reason)
     {
-        IsFailed = true;
-        FailureReason = reason;
+        _isFailed = true;
+        _failureReason = reason;
         _cursor = 0;
         _matches.Clear();
         _failures.Clear();
