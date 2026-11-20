@@ -145,7 +145,7 @@ internal static class LongRunResourceRecoveryTests
                     cycle, stage, "resource ledger leak after recovery stage");
                 Check(reads >= beforeRead && inspections >= beforeInspection,
                     cycle, stage, "monotonic provider counters changed backwards");
-                verified += recover ? 6 : 9;
+                verified += recover ? 6 : (mode == 4 ? 8 : 7);
             }
         }
 
