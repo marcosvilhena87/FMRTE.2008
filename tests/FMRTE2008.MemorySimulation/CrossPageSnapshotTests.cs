@@ -9,7 +9,8 @@ namespace FMRTE2008.MemorySimulation;
 internal static class CrossPageSnapshotTests
 {
     private enum Mutation { None, Table, Count, FirstSlot, FirstId, FirstName,
-        SecondId, PartialSecondId, CancelSecondId }
+        SecondId, PartialSecondId, CancelSecondId,
+        PriorIdDuringFinalReview, NewIdDuringPriorReview }
 
     internal static async Task RunAsync()
     {
@@ -77,6 +78,28 @@ internal static class CrossPageSnapshotTests
             Check(published[0].Id == 20, mutation + ": previous result modified");
         }
 
+        // Deterministic interleavings targeting the exact gap between the
+        // last forward confirmation and the commit of the next page.
+        foreach (var mutation in new[] {
+            Mutation.PriorIdDuringFinalReview, Mutation.NewIdDuringPriorReview })
+        {
+            var memory = new MutableMemory();
+            using var session = await Open(identity, memory);
+            var earlier = await session.ReadIdentityPageAsync(1, 1);
+            memory.Change(mutation);
+            await Reject<InvalidDataException>(
+                () => session.ReadIdentityPageAsync(2, 1));
+            Check(memory.DisposeCount == 1,
+                mutation + ": interleaved inconsistency did not invalidate session");
+            Check(earlier.Count == 1 && earlier[0].Id == 20,
+                mutation + ": already delivered snapshot was modified");
+            int reads = memory.ReadCount;
+            await Reject<ObjectDisposedException>(
+                () => session.ReadIdentityPageAsync(2, 1));
+            Check(memory.ReadCount == reads,
+                mutation + ": stale session touched memory");
+        }
+
         // Pre-cancelled second request must invalidate rather than publish
         // partial page data, while previously returned snapshots stay intact.
         var canceledMemory = new MutableMemory();
@@ -132,6 +155,9 @@ internal static class CrossPageSnapshotTests
     {
         private readonly SimulatedProcessMemory _memory = new();
         private Mutation _mutation;
+        private int _newPageIdReads;
+        private bool _priorChanged;
+        private bool _newChanged;
         public int ReadCount { get; private set; }
         public int DisposeCount { get; private set; }
 
@@ -161,10 +187,25 @@ internal static class CrossPageSnapshotTests
             }
             if (at == 0x2000 && length == 4 && _mutation == Mutation.FirstSlot)
                 return U32(0x3500);
-            if (at == 0x3100 && length == 4 && _mutation == Mutation.FirstId)
-                return U32(999);
+            if (at == 0x3100 && length == 4)
+            {
+                if (_mutation == Mutation.FirstId || _priorChanged)
+                    return U32(999);
+                // Trigger immediately AFTER this old-ID observation. The
+                // reverse pass must catch the change on the next observation.
+                if (_mutation == Mutation.PriorIdDuringFinalReview &&
+                    _newPageIdReads >= 2)
+                    _priorChanged = true;
+                // Trigger mutation of the requested page while a prior record
+                // is checked; the final requested-page reread must detect it.
+                if (_mutation == Mutation.NewIdDuringPriorReview &&
+                    _newPageIdReads >= 2)
+                    _newChanged = true;
+            }
             if (at == 0x3300 && length == 4)
             {
+                _newPageIdReads++;
+                if (_newChanged) return U32(999);
                 if (_mutation == Mutation.SecondId) return U32(20);
                 if (_mutation == Mutation.PartialSecondId) return new byte[2];
                 if (_mutation == Mutation.CancelSecondId)
