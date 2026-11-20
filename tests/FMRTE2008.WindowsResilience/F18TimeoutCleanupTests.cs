@@ -160,6 +160,7 @@ internal static class F18TimeoutCleanupTests
             throw new PlatformNotSupportedException("F18 requires Windows.");
         NegativeOracleControls();
         await PendingTaskAndCancellationControlsAsync();
+        await SecondBarrierJoinTimeoutControlAsync();
         FaultPriorityAndIndependentTeardownControls();
         ModeledReleaseFailureControls();
         PartialAcquisitionAndRecovery();
@@ -167,7 +168,7 @@ internal static class F18TimeoutCleanupTests
         await TimeoutAndConcurrentDisposeAsync();
         Console.WriteLine($"OK F18 Windows: {Cycles} observed timeouts, {Cycles * 4} acquisition stages, " +
             $"{Cycles} two-fault recovery cycles, 10 negative oracle controls, " +
-            "cancellation/exception, modeled release failures, primary+cleanup and independent teardown controls.");
+            "second-barrier join timeout/recovery, cancellation/exception, modeled release failures, primary+cleanup and independent teardown controls.");
     }
 
     private static void NegativeOracleControls()
@@ -241,6 +242,91 @@ internal static class F18TimeoutCleanupTests
         catch (IOException ex) when (ex.Message.Contains("after cancellation", StringComparison.Ordinal)) { }
         if (!faulted.IsCompleted || !faulted.IsFaulted)
             throw new Exception("F18 post-cancellation exception was not observed");
+    }
+
+    // A bounded observer never means a task was cancelled or completed.
+    // Keep this helper free of Dispose: the caller always releases barriers
+    // and independently attempts local resource cleanup in its finally block.
+    private static async Task<bool> ObserveJoinAsync(Task worker, TimeSpan limit,
+        Faults errors, bool expectedWorkerFault = false)
+    {
+        try
+        {
+            await worker.WaitAsync(limit);
+            return worker.IsCompleted;
+        }
+        catch (IOException ex) when (expectedWorkerFault &&
+            ex.Message.Contains("worker fault", StringComparison.Ordinal))
+        {
+            return worker.IsCompleted;
+        }
+        catch (TimeoutException ex)
+        {
+            errors.RecordCleanup(ex);
+            return false; // A timeout is NEVER credited as worker completion.
+        }
+        catch (Exception ex)
+        {
+            errors.RecordCleanup(ex);
+            return worker.IsCompleted;
+        }
+    }
+
+    private static async Task SecondBarrierJoinTimeoutControlAsync()
+    {
+        // Adversarial schedule: main release is signalled but a SECOND gate
+        // deliberately keeps the worker running. No sleeps, no native fault.
+        var oracle = new Oracle();
+        var entered = Signal();
+        var initialRelease = Signal();
+        var atSecondBarrier = Signal();
+        var finalRelease = Signal();
+        oracle.Started(92);
+        Task worker = Task.Run(async () =>
+        {
+            try
+            {
+                entered.TrySetResult(true);
+                await initialRelease.Task;
+                atSecondBarrier.TrySetResult(true);
+                await finalRelease.Task;
+            }
+            finally { oracle.Finished(92); }
+        });
+        var diagnostics = new Faults();
+        var primary = new IOException("modeled primary before join timeout");
+        diagnostics.SetPrimary(primary);
+        bool completed = false;
+        try
+        {
+            await entered.Task.WaitAsync(Deadline);
+            initialRelease.TrySetResult(true);
+            await atSecondBarrier.Task.WaitAsync(Deadline);
+            completed = await ObserveJoinAsync(worker, TimeSpan.Zero, diagnostics);
+            if (completed || worker.IsCompleted || diagnostics.Cleanup.Count != 1 ||
+                diagnostics.Cleanup[0] is not TimeoutException)
+                throw new Exception("F18 failed to detect second-barrier join timeout");
+            MustReject(() => oracle.AssertSettled());
+            var terminal = new InvalidOperationException("join worker still pending");
+            if (diagnostics.Combined(terminal) is not AggregateException combined ||
+                combined.InnerExceptions.Count != 3 ||
+                !ReferenceEquals(combined.InnerExceptions[0], primary) ||
+                !ReferenceEquals(combined.InnerExceptions[1], diagnostics.Cleanup[0]) ||
+                !ReferenceEquals(combined.InnerExceptions[2], terminal))
+                throw new Exception("F18 timeout masked primary/cleanup diagnostic");
+        }
+        finally
+        {
+            // Unblock BOTH gates regardless of failures in the assertions.
+            initialRelease.TrySetResult(true);
+            finalRelease.TrySetResult(true);
+            // The cooperative fixture must actually finish. Do not claim
+            // success after a timed-out observation.
+            await worker.WaitAsync(Deadline);
+        }
+        if (!worker.IsCompletedSuccessfully)
+            throw new Exception("F18 adversarial worker never completed");
+        oracle.AssertSettled();
     }
 
     private static void FaultPriorityAndIndependentTeardownControls()
@@ -489,26 +575,11 @@ internal static class F18TimeoutCleanupTests
             finally
             {
                 release.TrySetResult(true);
-                // The only worker gate has been released and its continuation is
-                // finite and deterministic. Await the ACTUAL worker rather than
-                // misinterpreting WaitAsync timeout as task completion. A separate
-                // negative control above checks that observer timeout alone cannot
-                // settle a task. This path must not abandon a pending worker.
-                try
-                {
-                    await worker;
-                    joined = true;
-                }
-                catch (IOException ex) when (cycle % 2 == 0 &&
-                    ex.Message.Contains("worker fault", StringComparison.Ordinal))
-                {
-                    joined = worker.IsCompleted;
-                }
-                catch (Exception ex)
-                {
-                    joined = worker.IsCompleted;
-                    faults.RecordCleanup(ex);
-                }
+                // Bounded join after releasing every known worker gate.
+                // On timeout, record the still-pending task rather than credit
+                // completion or silently abandoning it as a successful test.
+                joined = await ObserveJoinAsync(worker, Deadline, faults,
+                    expectedWorkerFault: cycle % 2 == 0);
                 // Always attempt both closes even when join or a close failed.
                 if (oracle.NeedsClose(otherId))
                     faults.TryCleanup(() => Close(other, otherId, oracle));
@@ -516,7 +587,8 @@ internal static class F18TimeoutCleanupTests
                     faults.TryCleanup(() => Close(owned, ownedId, oracle));
             }
             if (!joined || !worker.IsCompleted)
-                throw faults.Combined(new TimeoutException("F18 worker completion unconfirmed"));
+                throw faults.Combined(new TimeoutException(
+                    "F18 worker still pending after bounded join; teardown NOT verified"));
             if (!safe.IsClosed || !owned.SafeWaitHandle.IsClosed || !other.SafeWaitHandle.IsClosed)
                 throw new Exception("F18 native resource not closed after join");
             oracle.AssertSettled();
