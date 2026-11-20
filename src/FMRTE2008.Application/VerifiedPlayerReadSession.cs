@@ -42,10 +42,10 @@ public sealed class VerifiedPlayerReadSession : IDisposable
     private bool _memoryDisposed;
     private VerifiedPlayerReadSession(IProcessReadSession memory, ApprovedPlayerMap map)
     {
-        _memory = memory;
+        _memory = new BudgetedReadOnlySession(memory);
         _map = map;
         _crossPageReader = new CrossPageSnapshotReader(
-            memory, MinimalPlayerIdentityMap.Research802V1, map.HeaderAddress);
+            _memory, MinimalPlayerIdentityMap.Research802V1, map.HeaderAddress);
     }
 
     public static async Task<VerifiedPlayerReadSession> OpenAsync(
