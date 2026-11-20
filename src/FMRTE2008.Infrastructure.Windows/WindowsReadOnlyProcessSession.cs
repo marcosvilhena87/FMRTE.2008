@@ -41,7 +41,11 @@ internal sealed class WindowsReadOnlyProcessSession : IProcessHandleBoundReadSes
         if (!Native.GetProcessTimes(_handle, out long created, out long exited,
                 out _, out _))
             throw new Win32Exception(Marshal.GetLastWin32Error(), "GetProcessTimes falhou");
-        if (created <= 0 || exited != 0)
+        // Exit time is undefined for a running process. Use GetExitCodeProcess,
+        // with the documented ambiguity when an exited process returns 259.
+        if (!Native.GetExitCodeProcess(_handle, out uint exitCode))
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "GetExitCodeProcess falhou");
+        if (created <= 0 || exitCode != 259)
             throw new InvalidOperationException("Processo associado ao handle foi encerrado");
         return new ProcessHandleIdentity(checked((int)pid),
             DateTime.FromFileTimeUtc(created).Ticks);
@@ -79,6 +83,10 @@ internal sealed class WindowsReadOnlyProcessSession : IProcessHandleBoundReadSes
 
     private static class Native
     {
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool GetExitCodeProcess(SafeProcessHandle process, out uint exitCode);
+
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern uint GetProcessId(SafeProcessHandle process);
 
