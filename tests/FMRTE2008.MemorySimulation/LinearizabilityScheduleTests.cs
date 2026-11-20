@@ -222,10 +222,41 @@ internal static class LinearizabilityScheduleTests
             new Call(Kind.Dispose, Result.Success, 3, 4),
             new Call(Kind.Inspect, Result.Rejected, 5, 6)
         };
+        var invalidAfterInspection = new[]
+        {
+            new Call(Kind.Inspect, Result.IdentityFailure, 1, 2),
+            new Call(Kind.Read, Result.Success, 3, 4)
+        };
+        var spuriousRejection = new[]
+        {
+            new Call(Kind.Read, Result.Rejected, 1, 2)
+        };
+        var invalidAfterNativeFailure = new[]
+        {
+            new Call(Kind.Read, Result.NativeFailure, 1, 2),
+            new Call(Kind.Inspect, Result.Success, 3, 4)
+        };
+        var allowedOverlap = new[]
+        {
+            new Call(Kind.Read, Result.Rejected, 1, 6),
+            new Call(Kind.Dispose, Result.Success, 2, 3),
+            new Call(Kind.Inspect, Result.Rejected, 7, 8)
+        };
+        var invalidOrder = new[]
+        {
+            new Call(Kind.Read, Result.Success, 1, 2),
+            new Call(Kind.Dispose, Result.Success, 3, 4),
+            new Call(Kind.Inspect, Result.Success, 5, 6)
+        };
         if (ConsistentWithSequentialSpecification(impossible) ||
-            !ConsistentWithSequentialSpecification(allowed))
-            throw new Exception("F14 independent history oracle failed negative controls");
-        assertions += 2;
+            ConsistentWithSequentialSpecification(invalidAfterInspection) ||
+            ConsistentWithSequentialSpecification(spuriousRejection) ||
+            ConsistentWithSequentialSpecification(invalidAfterNativeFailure) ||
+            ConsistentWithSequentialSpecification(invalidOrder) ||
+            !ConsistentWithSequentialSpecification(allowed) ||
+            !ConsistentWithSequentialSpecification(allowedOverlap))
+            throw new Exception("F14 independent history oracle failed positive/negative controls");
+        assertions += 7;
 
         Console.WriteLine($"OK: {scenarios} F14 controlled adversarial schedules, " +
             $"{checkedHistories} real-time history checks, {assertions} assertions (offline)");
