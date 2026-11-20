@@ -20,7 +20,7 @@ internal static class StateInvariantModelTests
         int checks = 0, steps = 0;
         for (int trace = 0; trace < Traces; trace++)
         {
-            int closes = 0, reads = 0, published = 0, inspections = 0;
+            int closes = 0, reads = 0, published = 0, expectedPublications = 0, inspections = 0;
             bool poisoned = false, disposed = false, faultRead = false, faultIdentity = false;
             var identity = new ProcessHandleIdentity(3000 + trace, 638000000000000000 + trace);
 
@@ -60,6 +60,7 @@ internal static class StateInvariantModelTests
                         }
                         else
                         {
+                            expectedPublications++; // model transition, before observing SUT output
                             byte[] data = await session.ReadAsync((nuint)0x1000, 8, default);
                             Ensure(data.Length == 8 && data[0] == 0x6d, trace, step,
                                 "valid bytes lost");
@@ -140,8 +141,10 @@ internal static class StateInvariantModelTests
                 else
                     Ensure(closes == 0, trace, step, "live resource closed prematurely");
                 Ensure(closes <= 1, trace, step, "duplicate handle close");
+                Ensure(published == expectedPublications, trace, step,
+                    "publication diverged from independent trace oracle");
                 steps++;
-                checks += 2;
+                checks += 3;
             }
 
             int oldPublished = published, oldReadsEnd = reads;
@@ -150,7 +153,8 @@ internal static class StateInvariantModelTests
             Ensure(closes == 1, trace, Depth, "final release not exactly once");
             await Reject<ObjectDisposedException>(
                 () => session.ReadAsync((nuint)0x1000, 8, default));
-            Ensure(published == oldPublished && reads == oldReadsEnd, trace, Depth,
+            Ensure(published == expectedPublications &&
+                published == oldPublished && reads == oldReadsEnd, trace, Depth,
                 "bytes/native activity after final Dispose");
             checks += 2;
         }
