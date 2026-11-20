@@ -28,14 +28,14 @@ public sealed class IncrementalSearchController
     public IncrementalSearchController(Func<IIndexedPlayerSource> sourceFactory)
     {
         _sourceFactory = sourceFactory ?? throw new ArgumentNullException(nameof(sourceFactory));
-        _scanner = CreateScanner();
+        _scanner = CreateScanner(out _count);
     }
 
-    private IncrementalPlayerSearch CreateScanner()
+    private IncrementalPlayerSearch CreateScanner(out int count)
     {
         var source = _sourceFactory() ?? throw new InvalidOperationException("Fonte indisponível");
         var scanner = new IncrementalPlayerSearch(source);
-        _count = source.Count;
+        count = source.Count;
         return scanner;
     }
 
@@ -47,7 +47,7 @@ public sealed class IncrementalSearchController
             throw new ArgumentOutOfRangeException(nameof(query));
         // Build the replacement first. A failed factory must not corrupt the
         // current state or make a pending result appear to belong to a new run.
-        var replacement = CreateScanner();
+        var replacement = CreateScanner(out int replacementCount);
         lock (_stateGate)
         {
             _generation++;
@@ -58,6 +58,7 @@ public sealed class IncrementalSearchController
             IsFailed = false;
             FailureReason = null;
             _scanner = replacement;
+            _count = replacementCount;
         }
     }
 
