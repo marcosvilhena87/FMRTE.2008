@@ -114,3 +114,29 @@ O `F19ApprovalGateTests` verifica separadamente o bloqueio **em runtime** antes 
 | A09/A12 | Gate atual nega mapas e WPF segue demonstrativa | Aprovação humana, abertura operacional autorizada, aceitação dos riscos |
 
 **Decisão final deste documento:** `NoApprovedPlayerMaps` continua deny-all, `approved=false`, `operational=false`; A12 = **GATE-BLOQUEADO**. O PR #20 permanece Draft; nenhuma aprovação de mapa, integração live ou edição de `FM2008.mapping` foi solicitada.
+
+
+## Adendo B01/B02/B03 — correção e limitação da revisão 5999613029
+
+**B01 — Testes negativos realmente executados por ID.** A suíte `F19ExecutableNegativeCases.RunAsync()`, inscrita no `Program.cs`, executa **12 cenários independentes nomeados**, imprime `OK F19 NEG Axx/<case>` somente depois de observar a rejeição esperada e exige exatamente 12 sucessos. A função `Reject<T>` falha quando a operação não produz a exceção esperada; um **teste de mutação que executa o próprio validador** passa propositalmente uma operação sem falha e exige que o validador a rejeite. Os testes antigos continuam executados separadamente, e `F19CoverageInventoryTests` permanece como inventário de presença/registro, **não** é usado como substituto da execução semântica. Matriz dos novos testemunhos:
+
+| ID de teste no log | Ação negativa offline | Resultado exigido |
+| --- | --- | --- |
+| A01/sha-mismatch | Fingerprint diferente do conhecido | `IsRecognized=false` |
+| A02/x86-overflow | Base que causa overflow de header | `OverflowException` |
+| A03/null-table-header | Header com tabela nula | `InvalidDataException` |
+| A04/invalid-player-id | Registro com ID zero | `InvalidDataException` |
+| A05/unmapped-read | Região fictícia não mapeada | `InvalidDataException` |
+| A06/changed-table-during-recheck | Tabela divergente durante reconferência | `InvalidDataException` |
+| A07/cancelled-session-read | Leitura da fonte fictícia com cancelamento | `OperationCanceledException` |
+| A08/live-index-source-denied | Fonte marcada como live em busca incremental | `UnauthorizedAccessException` |
+| A09/deny-all-catalog | Pesquisa no `NoApprovedPlayerMaps` | `null` |
+| A10/oversized-distributed-sample | Amostra maior que a contagem | `ArgumentOutOfRangeException` |
+| A11/wrong-version-denied | Versão incompatível | `IsRecognized=false` |
+| A12/no-implicit-approval | Flags de catálogo e mapa com build reconhecida | `false/false` |
+
+**B02 — Escopo ampliado, ainda delimitado.** `F19CompositionRegressionTests` agora examina **todos os arquivos `.cs` do projeto desktop presentes no checkout**, excluindo apenas diretórios de `obj`; uma função `ValidateDesktopRoots` rejeita construções textuais conhecidas de abertura de sessão e exige uma única inicialização demonstrativa. Testes negativos acrescentam artificialmente uma segunda raiz de abertura ou fábrica de opener e chamam **a mesma função**, exigindo rejeição. Separadamente é instanciado o `DemonstrationIndexedPlayerSource` realmente compilado e verificado que não se declara live e fornece um registro fictício. Isso **não prova exclusividade global futura**: reflexão, alterações na origem dos dados, fontes geradas e construções não reconhecidas requerem revisão humana de código e binários. Nenhuma autorização A12 decorre dessa proteção.
+
+**B03 — PENDÊNCIA DOCUMENTAL EXPLÍCITA (não corrigida por inferência).** Para cada observação histórica R01–R07 ainda faltam metadados originais completos de executor individual, ambiente de coleta e instante da observação. SHA do documento e autor/horário Git **não substituem** esses metadados. O dossiê deve mantê-los como `PENDENTE/DECLARADO` até evidência externa corroborada, sem inferir risco aceito, aprovação operacional ou integridade de toda a tabela.
+
+**Condições para o parecer de encerramento:** HEAD estável; 8/8 workflows no commit final; logs Windows comprovando os 12 `OK F19 NEG` em `push` e `pull_request`, os controles de composição e F16–F18; revisão independente adicional. O PR continua **Draft** e `A12=GATE-BLOQUEADO`, `approved=false`, `operational=false`.
