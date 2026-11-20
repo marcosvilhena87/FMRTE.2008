@@ -26,7 +26,7 @@ internal static class DisposeRaceTests
         verified.Dispose();
         Check(pending.DisposeCount == 0, "Handle closed during in-flight ReadAsync");
         await Reject<ObjectDisposedException>(() => verified.ReadFirstPlayerIdAsync());
-        await Reject<InvalidOperationException>(() => verified.ReadIdentityPageAsync(0));
+        await Reject<ObjectDisposedException>(() => verified.ReadIdentityPageAsync(1));
         pending.Release.TrySetResult(true);
         await Reject<ObjectDisposedException>(() => read);
         Check(pending.DisposeCount == 1, "Handle not closed once after read completion");
