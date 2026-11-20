@@ -136,7 +136,8 @@ public sealed class VerifiedPlayerReadSession : IDisposable
                 ObjectDisposedException.ThrowIf(_disposed || _invalidated, this);
                 return result;
             }
-            catch (Exception error) when (error is IOException or OverflowException
+            catch (Exception error) when (error is IOException or InvalidDataException
+                or OverflowException or ArgumentOutOfRangeException
                 or OperationCanceledException or ObjectDisposedException
                 or System.ComponentModel.Win32Exception)
             {
