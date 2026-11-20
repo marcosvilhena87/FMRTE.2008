@@ -116,7 +116,7 @@ try
     Console.WriteLine(seenDistributed
         ? $"Amostragem distribuída solicitada: {distributedCount} índices determinísticos, {repeatCount} leitura(s)."
         : $"Amostragem solicitada: primeiros {firstCount} registros, {repeatCount} leitura(s).");
-    List<(uint Table, int Count, List<(uint Pointer, int Id, string First, string Last, string Common)> Records)> samples = new();
+    List<ReadOnlyProbeSample> samples = new();
 
     for (int sampleIndex = 0; sampleIndex < repeatCount; sampleIndex++)
     {
@@ -136,7 +136,7 @@ try
         int[] indices = seenDistributed ? DistributedPlayerSampling.BuildIndices(count, distributedCount)
             : Enumerable.Range(0, firstCount).ToArray();
         Console.WriteLine("Índices fixados nesta amostra: " + string.Join(",", indices));
-        var records = new List<(uint Pointer, int Id, string First, string Last, string Common)>();
+        var records = new List<ReadOnlyProbePlayer>();
         foreach (int index in indices)
         {
             ulong slot = checked((ulong)tablePtr + (ulong)index * 4ul);
@@ -155,18 +155,15 @@ try
                 lastName = ReadLegacyName(handle, playerPtr, 284);
                 commonName = ReadLegacyName(handle, playerPtr, 288);
             }
-            records.Add((playerPtr, playerId, firstName, lastName, commonName));
+            records.Add(new ReadOnlyProbePlayer(playerPtr, playerId, firstName, lastName, commonName));
             Console.WriteLine($"  [{index}] ponteiro=0x{playerPtr:X8}; id={playerId}");
             if (namesRequested)
                 Console.WriteLine($"      primeiro='{firstName}' | sobrenome='{lastName}' | comum='{commonName}'");
         }
-        samples.Add((tablePtr, count, records));
+        samples.Add(new ReadOnlyProbeSample(tablePtr, count, records));
     }
 
-    bool stable = samples.Skip(1).All(sample =>
-        sample.Table == samples[0].Table &&
-        sample.Count == samples[0].Count &&
-        sample.Records.SequenceEqual(samples[0].Records));
+    bool stable = ReadOnlyProbeExitPolicy.AreStable(samples);
     Console.WriteLine(repeatCount == 1
         ? "Estabilidade: não avaliada (uma amostra)."
         : stable ? "Estabilidade: amostras idênticas."
