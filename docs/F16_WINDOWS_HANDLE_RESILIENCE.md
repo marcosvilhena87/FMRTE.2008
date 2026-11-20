@@ -1,20 +1,24 @@
 # F16 — Robustez controlada de handles Windows locais
 
-## Base e propósito
-Base: F15 integrado na main em `1f3b0c2bd716bbc2c68fe4687cc8385a4e57058a`, com os quatro workflows pós-merge de push concluídos com sucesso. F16 complementa os modelos de recursos fictícios com objetos de sincronização **criados exclusivamente pelo processo de teste**. Não se conecta ao jogo.
+## Proveniência
+Base `main` F15: `1f3b0c2bd716bbc2c68fe4687cc8385a4e57058a`, validada 4/4 pós-merge.
+O F16 permanece inteiramente não operacional e é executado no Windows dentro do workflow de simulação.
 
-## Suíte Windows
-`tests/FMRTE2008.WindowsResilience` é um executável .NET 10 restrito a Windows e executado por `memory-simulation.yml`. Faz 512 iterações finitas, cada qual criando dois `ManualResetEvent` independentes (1.024 objetos kernel no total, sem simultaneidade de 1.024 handles).
-- A cada quarta iteração, testa uma referência `SafeWaitHandle.DangerousAddRef` adquirida antes do descarte do proprietário; libera a lease em `finally`. Não usa `DangerousGetHandle` nem efetua operações nativas por ponteiro.
-- Outros modos exercitam falha injetada e cancelamento pré-sinalizado, verificando que a limpeza é mantida.
-- Verifica contabilidade lógica independente de aquisições e descartes de objetos gerenciados.
-- Compara `Process.GetCurrentProcess().HandleCount` antes e depois, após GC, com tolerância de 64 handles para variações de CI. Uma medição final e esse limiar detectam apenas crescimento grosseiro, não provam ausência de vazamentos.
-- Não abre processos, enumera PIDs, interage com `fm.exe`, nem usa qualquer mapa de jogadores.
+## Falha inicial diagnosticada
+A primeira versão falhou no step F16 com `System.Exception: F16 owner not marked closed`. Ela exigia `SafeHandle.IsClosed` imediatamente depois de `ManualResetEvent.Dispose()`, embora ainda houvesse uma referência adicional feita por `DangerousAddRef`. O teste foi corrigido para verificar fechamento **após** `DangerousRelease`. A lease é liberada em `finally`.
 
-## Restrições preservadas
-`NoApprovedPlayerMaps`, `approved=false`, `operational=false`. Nenhuma escrita, nenhuma autorização operacional, nenhum `WriteProcessMemory` e nenhuma modificação no repositório `FM2008.mapping`.
+## Testes de robustez
+- 512 ciclos sequenciais, dois eventos kernel locais por ciclo (1.024 aquisições).
+- 128 leases em `SafeWaitHandle`, 128 falhas injetadas e 128 cancelamentos antes da operação.
+- Ledger externo às instâncias testadas: IDs únicos de aquisição, registro de tentativa de descarte antes da chamada, registro de sucesso **apenas após retorno de `Dispose`**, rejeição de duplicatas, saldo zero após cada ciclo e total esperado.
+- Verificação do estado de fechamento de `SafeHandle` depois da liberação da lease, sem acesso a ponteiros brutos ou operações no processo de jogo.
+- Amostragem do número de handles do próprio processo a cada 64 ciclos após GC, com tolerância de aumento máximo de 64 sobre a linha de base para detectar deriva grosseira na CI.
 
-## Limitações e critérios de revisão
-Esta etapa mede eventos Windows criados pelo próprio teste, **não** o comportamento da camada real de abertura de processo, dos callbacks de leitura nativa ou do `CloseHandle` sob falhas externas. As iterações são sequenciais; a suíte F15 cobre interleavings simulados. A comparação de contagem é ruidosa e seu limite não é orçamento de produção. Reavaliar limites após séries de runs em runners Windows e acrescentar cenários realmente paralelos somente com oráculo determinístico e sem dependências do jogo.
+## Limites
+Um retorno de `Dispose` não prova individualmente que `CloseHandle` foi bem sucedido. `Process.HandleCount` pode flutuar por razões ambientais; amostragens finitas não provam ausência geral de vazamentos. Não há injeção real de falhas em `CloseHandle`, nem teste de concorrência nativa; o cancelamento é pré-sinalizado. O F15 contém testes de concorrência determinística em objetos fictícios.
 
-Manter o PR em Draft até revisão de segurança, execução 4/4 workflows no HEAD do PR, análise dos logs e revisão de concorrência/contabilidade. Não executar merge nesta etapa.
+## Segurança
+Nenhum processo externo é aberto, enumerado ou acessado. Nenhuma leitura ou escrita de memória do jogo. Restrições: `NoApprovedPlayerMaps`, `approved=false`, `operational=false`; sem `WriteProcessMemory`, sem `fm.exe`, sem mudança em `FM2008.mapping`.
+
+## Gate
+PR Draft até o HEAD atualizado passar nos quatro workflows (push/PR), revisão final do ledger e da limpeza excepcional e ausência de conflitos. Não realizar merge nesta etapa.
