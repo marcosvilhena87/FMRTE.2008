@@ -20,7 +20,7 @@ internal static class F19ExecutableNegativeCases
 
         await Case("A01", "sha-mismatch", () =>
             Deny(!SupportedBuildCatalog.Recognize(known with
-            { Sha256 = new string('0', 64) }).IsRecognized));
+            { Sha256 = new string('0', 64) }).IsRecognized, "IsRecognized=false"));
 
         await Case("A02", "x86-overflow", () =>
             Reject<OverflowException>(() => Task.FromResult(
@@ -30,7 +30,7 @@ internal static class F19ExecutableNegativeCases
         {
             var memory = new SimulatedProcessMemory();
             memory.AddRegion(0x1000, Header(0, 1));
-            await Reject<InvalidDataException>(() =>
+            return await Reject<InvalidDataException>(() =>
                 new PlayerListReader(memory).ReadHeaderAsync(0x1000));
         });
 
@@ -42,7 +42,7 @@ internal static class F19ExecutableNegativeCases
             var player = new byte[292]; // ID=0 is invalid
             memory.AddRegion(0x3000, player);
             var header = await new PlayerListReader(memory).ReadHeaderAsync(0x1000);
-            await Reject<InvalidDataException>(async () =>
+            return await Reject<InvalidDataException>(async () =>
                 await new MinimalPlayerIdentityReader(memory,
                     MinimalPlayerIdentityMap.Research802V1).ReadAsync(header, 0));
         });
@@ -62,7 +62,7 @@ internal static class F19ExecutableNegativeCases
         {
             using var cts = new CancellationTokenSource();
             cts.Cancel();
-            await Reject<OperationCanceledException>(() =>
+            return await Reject<OperationCanceledException>(() =>
                 new SimulatedProcessMemory().ReadAsync((nuint)0x1000, 4, cts.Token));
         });
 
@@ -72,7 +72,7 @@ internal static class F19ExecutableNegativeCases
 
         await Case("A09", "deny-all-catalog", async () =>
             await Deny(await new NoApprovedPlayerMaps()
-                .FindApprovedAsync(known, default) is null));
+                .FindApprovedAsync(known, default) is null, "null"));
 
         await Case("A10", "oversized-distributed-sample", () =>
             Reject<ArgumentOutOfRangeException>(() => Task.FromResult(
@@ -80,11 +80,11 @@ internal static class F19ExecutableNegativeCases
 
         await Case("A11", "wrong-version-denied", () =>
             Deny(!SupportedBuildCatalog.Recognize(known with
-            { FileVersion = "8.0.1" }).IsRecognized));
+            { FileVersion = "8.0.1" }).IsRecognized, "IsRecognized=false"));
 
         await Case("A12", "no-implicit-approval", () =>
             Deny(!MinimalPlayerIdentityMap.Research802V1.IsApprovedForOperationalUse &&
-                !SupportedBuildCatalog.Recognize(known).MemoryMapApproved));
+                !SupportedBuildCatalog.Recognize(known).MemoryMapApproved, "false/false"));
 
         if (_passed != 12) throw new Exception("F19 B01 incomplete witness count");
         // This deliberately broken case is fed to the SAME executable validator.
@@ -95,23 +95,24 @@ internal static class F19ExecutableNegativeCases
         Console.WriteLine("OK F19 executable negatives: 12 individually logged A01-A12 cases; omitted rejection detected.");
     }
 
-    private static async Task Case(string id, string name, Func<Task> scenario)
+    private static async Task Case(string id, string name, Func<Task<string>> scenario)
     {
-        await scenario();
+        string actualOutcome = await scenario();
+        F20ExecutionEvidence.Record(id, name, actualOutcome);
         _passed++;
         Console.WriteLine($"OK F19 NEG {id}/{name}: expected denial observed");
     }
 
-    private static Task Deny(bool condition)
+    private static Task<string> Deny(bool condition, string observedOutcome)
     {
         if (!condition) throw new InvalidOperationException("F19 denial was not observed");
-        return Task.CompletedTask;
+        return Task.FromResult(observedOutcome);
     }
 
-    private static async Task Reject<T>(Func<Task> operation) where T : Exception
+    private static async Task<string> Reject<T>(Func<Task> operation) where T : Exception
     {
         try { await operation(); }
-        catch (T ex) when (ex.GetType() == typeof(T)) { return; }
+        catch (T ex) when (ex.GetType() == typeof(T)) { return ex.GetType().Name; }
         throw new InvalidOperationException("F19 required exception was not raised: " + typeof(T).Name);
     }
 
