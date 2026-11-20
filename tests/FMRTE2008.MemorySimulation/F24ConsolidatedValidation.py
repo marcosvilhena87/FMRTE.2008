@@ -94,6 +94,22 @@ def validate(m,docs):
       "historicalAttestation":False,"humanReviewer":None,"humanReviewDate":None,
       "humanAuthority":None,"observationSourceIndependent":False},
       "F24.4 provenance promoted")
+    check(f22["decision"]["approved"] is False and
+          f22["decision"]["operational"] is False and
+          f22["decision"]["gateA12"]=="GATE-BLOQUEADO" and
+          f22["decision"]["b03"]=="PENDING-DECLARED","F22 gate/decision promoted")
+    check(b03["decision"]["approved"] is False and
+          b03["decision"]["operational"] is False and
+          b03["decision"]["gateA12"]=="GATE-BLOQUEADO" and
+          b03["decision"]["b03"]=="PENDING-DECLARED","F23.1 decision promoted")
+    check(risks["decision"]["approved"] is False and
+          risks["decision"]["operational"] is False and
+          risks["decision"]["decisionStatus"]=="NOT_MADE" and
+          risks["decision"]["gateA12"]=="GATE-BLOQUEADO","F23.2 decision promoted")
+    check(suff["decision"]["approved"] is False and
+          suff["decision"]["operational"] is False and
+          suff["decision"]["decision"]=="NOT_MADE" and
+          suff["decision"]["sufficiency"]=="INSUFFICIENT_PRESERVED","F24.1 decision promoted")
     check(f23["approval"]["approved"] is False and f23["approval"]["operational"] is False
           and f23["approval"]["gateA12"]=="GATE-BLOQUEADO","F23 approval drift")
     check(elig["decision"]["approved"] is False and elig["decision"]["operational"] is False
