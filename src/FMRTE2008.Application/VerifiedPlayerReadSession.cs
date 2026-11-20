@@ -137,11 +137,13 @@ public sealed class VerifiedPlayerReadSession : IDisposable
                 return result;
             }
         }
-        catch (Exception error) when (error is IOException or InvalidDataException
-            or OverflowException or ArgumentOutOfRangeException
-            or OperationCanceledException or ObjectDisposedException
-            or System.ComponentModel.Win32Exception)
+        catch
         {
+            // Once the read lease has been acquired, *any* provider exception
+            // makes the session untrustworthy. Do not reuse the handle or
+            // publish later data, even for unforeseen failure types.
+            // Argument validation and concurrent-read rejection happen
+            // before the try and therefore do not poison a healthy session.
             lock (_lifetimeGate)
                 _invalidated = true;
             throw;
