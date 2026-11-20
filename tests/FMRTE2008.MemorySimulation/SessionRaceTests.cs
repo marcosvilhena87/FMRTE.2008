@@ -28,6 +28,28 @@ internal static class SessionRaceTests
         Check(controller.NextIndex == 1 && controller.Matches.Count == 1,
             "Successful scan not committed once");
 
+        // Published snapshots must not be backed by a collection that Restart
+        // can clear or a later scan can append to.
+        var snapshotBeforeRestart = controller.Matches;
+        controller.Restart("");
+        Check(snapshotBeforeRestart.Count == 1 && snapshotBeforeRestart[0].Id == 111 &&
+            controller.Matches.Count == 0 && controller.NextIndex == 0,
+            "Restart changed an already published result snapshot");
+
+        // Concurrent inspection of results is permitted while a scan is paused.
+        var pending = new PausedSource();
+        var observable = new IncrementalSearchController(() => pending);
+        var scanning = observable.NextAsync(1);
+        await pending.Entered.Task;
+        Check(observable.Matches.Count == 0 && observable.NextIndex == 0,
+            "Pending scan exposed uncommitted results");
+        pending.Release.SetResult(true);
+        await scanning;
+        var committed = observable.Matches;
+        observable.Restart("");
+        Check(committed.Count == 1 && observable.Matches.Count == 0,
+            "Published snapshot was mutated by session reset");
+
         // A restart while an old async read is pending must drop old data.
         var old = new PausedSource();
         var fresh = new ImmediateSource();
