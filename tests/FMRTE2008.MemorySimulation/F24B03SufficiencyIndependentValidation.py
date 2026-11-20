@@ -25,7 +25,7 @@ if report["manifestSha256"]!=hashlib.sha256(raw).hexdigest() or report["schemaSh
     raise SystemExit("F24.1 digest mismatch")
 results=[]
 for c in cases:
-    if c["result"]!="rejected" or c["actualOutcome"]!=c["expectedOutcome"]!="SufficiencyViolation":
+    if c["result"]!="rejected" or c["actualOutcome"]!="SufficiencyViolation" or c["expectedOutcome"]!="SufficiencyViolation":
         raise SystemExit("F24.1 fail-open primary validator "+c["caseId"])
     candidate=json.loads((directory/(c["caseId"]+".json")).read_text(encoding="utf-8"))
     errors=list(validator.iter_errors(candidate))
