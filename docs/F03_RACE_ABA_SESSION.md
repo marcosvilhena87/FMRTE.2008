@@ -13,8 +13,9 @@ operacional ao FM2008 e não altera permissões de processos Windows.
    geração anterior não pode publicar resultados nem modificar a nova sessão.
 3. Uma falha fatal ou cancelamento invalida cursor, resultados e erros da
    geração afetada; a recuperação exige `Restart` e uma nova fonte.
-4. Fontes `IsLiveProcessSource=true` continuam recusadas.
-5. O diagnóstico isolado do FM2008 permanece estritamente somente leitura.
+4. Consultas a resultados, falhas, cursor e estado usam sincronização; listas publicadas são cópias estáveis, não visões mutáveis da sessão.
+5. Fontes `IsLiveProcessSource=true` continuam recusadas.
+6. O diagnóstico isolado do FM2008 permanece estritamente somente leitura.
    `PROCESS_VM_READ | PROCESS_QUERY_INFORMATION` não foi ampliado.
 
 ## Testes simulados
@@ -25,6 +26,7 @@ operacional ao FM2008 e não altera permissões de processos Windows.
   da nova fonte é aceito.
 - Falha fatal depois de um lote previamente aceito: a sessão é invalidada e
   resultados/cursor anteriores são apagados.
+- Snapshots já publicados permanecem imutáveis após reinício; consultas durante leitura pendente não visualizam dados ainda não confirmados.
 - ABA A→B→A antes de uma observação: o guard de F02 ainda vê A e não consegue
   inferir a mudança intermediária. O teste demonstra **limitação**, não
   segurança comprovada.
