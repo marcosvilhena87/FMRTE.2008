@@ -47,6 +47,42 @@ internal static class F19CompositionRegressionTests
             @"bool\s+IsApprovedForOperationalUse\s*=>\s*false\s*;"),
             "research map cannot become approved");
 
+        // B02: scan EVERY desktop source in this checkout, not only the
+        // original field initializer. This is a bounded project-source guard.
+        var allDesktopSources = Directory.GetFiles(Path.Combine(root,
+            "src", "FMRTE2008.Desktop"), "*.cs", SearchOption.AllDirectories)
+            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}",
+                StringComparison.OrdinalIgnoreCase))
+            .Select(File.ReadAllText).ToArray();
+        ValidateDesktopRoots(allDesktopSources);
+        checks++;
+        // Unlike the former negative controls, call the SAME validator on
+        // a deliberately introduced second composition path.
+        bool deniedAlternate = false;
+        try
+        {
+            ValidateDesktopRoots(allDesktopSources.Append(
+                "class ExtraRoot { void Go() { VerifiedPlayerReadSession.OpenAsync(); } }").ToArray());
+        }
+        catch (InvalidOperationException) { deniedAlternate = true; }
+        Check(deniedAlternate, "alternate desktop session access was not rejected");
+        bool deniedFactory = false;
+        try
+        {
+            ValidateDesktopRoots(allDesktopSources.Append(
+                "class ExtraRoot { void Go() { new VerifiedWindowsProcessOpener(); } }").ToArray());
+        }
+        catch (InvalidOperationException) { deniedFactory = true; }
+        Check(deniedFactory, "alternate desktop opener factory was not rejected");
+
+        // Functional evidence for the currently compiled demonstration source:
+        // no process, no OS handle, only static in-memory player fixtures.
+        var demonstration = new FMRTE2008.Application.DemonstrationIndexedPlayerSource();
+        Check(!demonstration.IsLiveProcessSource && demonstration.Count > 0,
+            "compiled demonstration source became live or empty");
+        Check(demonstration.ReadAtAsync(0, CancellationToken.None).GetAwaiter().GetResult().Id > 0,
+            "compiled demonstration fixture returned invalid identity");
+
         // Mutation controls prove the tripwire rejects a changed composition.
         Check(!Regex.IsMatch(desktop.Replace(
             "new DemonstrationIndexedPlayerSource()",
@@ -63,6 +99,21 @@ internal static class F19CompositionRegressionTests
             @"bool\s+IsApprovedForOperationalUse\s*=>\s*false\s*;"),
             "mutated research approval flag escaped the tripwire");
         Console.WriteLine($"OK F19 composition regression: {checks} source tripwires and mutation negatives (not an operational approval).");
+    }
+
+    private static void ValidateDesktopRoots(string[] sources)
+    {
+        if (sources.Length == 0)
+            throw new InvalidOperationException("F19 missing desktop sources");
+        string joined = string.Join("\n", sources);
+        if (Regex.IsMatch(joined,
+            @"\bVerifiedPlayerReadSession\s*\.\s*OpenAsync\s*\(|\bOpenVerifiedAsync\s*\(|\bnew\s+VerifiedWindowsProcessOpener\s*\("))
+            throw new InvalidOperationException("F19 unexpected desktop live session construction");
+        if (Regex.Matches(joined,
+            @"\bnew\s*\(\s*\(\s*\)\s*=>\s*new\s+DemonstrationIndexedPlayerSource\s*\(\s*\)\s*\)").Count != 1)
+            throw new InvalidOperationException("F19 desktop demonstration root count changed");
+        // This check does not cover reflection, generated binaries, or future
+        // provider types: review of every source diff remains mandatory.
     }
 
     private static string LocateRepositoryRoot()
