@@ -15,6 +15,14 @@ O ledger representa o sucesso de callbacks simulados de fechamento: **não é pr
 - Cada etapa exige ausência de reutilização da sessão terminada, rejeição de leitura e inspeção após descarte, fechamento único e saldo zero de recursos ativos.
 - **128 interleavings adicionais** usam dois recursos independentes e uma leitura pendente. `Dispose` invalida o primeiro recurso, mantém seu lease durante a pendência e não impede a segunda sessão de progredir. Ambos devem terminar com fechamento único.
 
+## Revisão final — fechamento excepcional e orçamento de recursos
+
+A auditoria observou que o ledger de 30.000 recursos contabiliza **fechamentos simulados bem-sucedidos**, mas um callback de fechamento que lança exceção não comprova a liberação física de um recurso. A suíte adicional `ResourceBudgetAuditTests` mantém separadas as contagens de **tentativas**, **sucessos** e **liberações incertas**: 128 × 4 cenários controlados incluem erro nativo com fechamento normal, erro nativo mascarado por exceção ao fechar, `Dispose` durante leitura pendente e exceção ao fechar após `Dispose`. Garante uma única tentativa mesmo quando o callback lança exceção, sem converter o recurso incerto em sucesso contábil.
+
+O mesmo conjunto exercita `BudgetedReadOnlySession` com limites de 2 leituras/16 bytes, rejeição de terceira leitura sem novo acesso ao provedor, fechamento único do recurso interno ao descartar o wrapper, e `Dispose` durante leitura pendente com orçamento de 1 leitura/8 bytes. O wrapper não promete invalidar automaticamente a sessão quando o orçamento se esgota: a falha de orçamento é rejeitada, e o descarte explícito encerra a sessão no teste.
+
+As sequências são finitas, deterministicamente sincronizadas por `TaskCompletionSource`. Não são prova de ausência de leaks do SO nem garantia de que um callback de fechamento excepcional efetivamente liberou o handle. O comportamento de exceção de limpeza substituindo a exceção de leitura permanece conhecido e documentado.
+
 ## Limitações
 A execução é finita, determinística e restrita aos casos definidos. Repetir ciclos não prova segurança contra toda condição de corrida, vazamentos de memória gerenciada, falhas do SO ou comportamento de `SafeHandle` nativo. Para falha do callback de fechamento, os testes F13/F14 existentes verificam tentativas únicas; esta suíte F15 mede fechamento bem-sucedido somente no simulador.
 
