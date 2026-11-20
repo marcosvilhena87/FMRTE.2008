@@ -65,6 +65,19 @@ internal static class UnexpectedSessionFailureTests
         Check(first.Disposes == 1 && second.Disposes == 0,
             "session handles were shared");
 
+        // The opener may return a handle just after its token was canceled.
+        // OpenAsync must not publish or leak that newly acquired source.
+        using (var cts = new CancellationTokenSource())
+        {
+            var returnedAfterCancel = new ControlledSource(FailureKind.None);
+            await Reject<OperationCanceledException>(() => VerifiedPlayerReadSession.OpenAsync(
+                123, identity, map, new CancelOnReturnOpener(returnedAfterCancel, cts), cts.Token));
+            Check(returnedAfterCancel.Disposes == 1,
+                "canceled opener returned a handle that was not released");
+            Check(returnedAfterCancel.Reads == 0,
+                "canceled opener returned a handle that was used");
+        }
+
         var blocked = new FixtureOpener(new ControlledSource(FailureKind.None));
         await Reject<UnauthorizedAccessException>(() => VerifiedPlayerReadSession.OpenAsync(
             123, identity, new NoApprovedPlayerMaps(), blocked));
@@ -97,6 +110,17 @@ internal static class UnexpectedSessionFailureTests
         {
             Opens++;
             return Task.FromResult(memory);
+        }
+    }
+
+    private sealed class CancelOnReturnOpener(IProcessReadSession source,
+        CancellationTokenSource cancellation) : IVerifiedProcessOpener
+    {
+        public Task<IProcessReadSession> OpenVerifiedAsync(int pid, ExecutableIdentity identity,
+            CancellationToken ct)
+        {
+            cancellation.Cancel();
+            return Task.FromResult(source);
         }
     }
 
