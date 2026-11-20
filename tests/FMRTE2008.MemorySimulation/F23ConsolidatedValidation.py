@@ -159,7 +159,8 @@ def validate_existing_reports(m):
                 stage+" independent schema count")
         require(result[sha_key]==entry["sha256"] and
                 set(their_ids)==set(our_ids),stage+" independent schema identity")
-        require(all(x["result"]=="rejected" and x["schemaErrorCount"]>0
+        require(all((x["actual"] if stage=="F22" else x["result"])=="rejected" and
+                    x["schemaErrorCount"]>0 and (stage!="F22" or x["expected"]=="rejected")
                     for x in result["negativeCases"]),stage+" independent schema outcomes")
         records.append({"stage":stage+"-schema","report":name,
            "sourceSha256":entry["sha256"],"negativeCasesRejected":total,
