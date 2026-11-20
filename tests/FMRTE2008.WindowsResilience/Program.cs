@@ -77,17 +77,29 @@ for (int cycle = 0; cycle < Cycles; cycle++)
     }
     finally
     {
-        // Release the lease before testing its closed state. Exception-safe cleanup.
-        if (leaseAdded)
+        // Nested finally blocks preserve independent cleanup if release/validation throws.
+        try
         {
-            try { safe!.DangerousRelease(); }
-            finally { ledger.ReleaseLease(); }
-            leaseAdded = false;
-            if (!safe!.IsClosed)
-                throw new Exception($"F16 handle still open after owner disposal and lease release at cycle {cycle}");
+            if (leaseAdded)
+            {
+                safe!.DangerousRelease();
+                ledger.ReleaseLease(); // count only successful release
+                leaseAdded = false;
+                if (!safe.IsClosed)
+                    throw new Exception($"F16 handle still open after owner disposal and lease release at cycle {cycle}");
+            }
         }
-        if (first is not null) DisposeEvent(first, firstId, ledger);
-        if (second is not null) DisposeEvent(second, secondId, ledger);
+        finally
+        {
+            try
+            {
+                if (first is not null) DisposeEvent(first, firstId, ledger);
+            }
+            finally
+            {
+                if (second is not null) DisposeEvent(second, secondId, ledger);
+            }
+        }
     }
 
     ledger.AssertBalanced();
