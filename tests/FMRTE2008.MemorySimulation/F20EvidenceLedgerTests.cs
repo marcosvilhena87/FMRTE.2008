@@ -111,6 +111,38 @@ internal static class F20EvidenceLedgerTests
         RejectObservedMutation("wrong-criterion", rows => { rows[5] = rows[5] with { Criterion = "A02" }; return rows; });
 
         var identity = F20CiProvenanceTests.Run(root);
+        // Export the outcomes that passed the real validator. GitHub stores this
+        // immutable artifact separately and supplies its artifact SHA-256 digest.
+        string? runnerTemp = Environment.GetEnvironmentVariable("RUNNER_TEMP");
+        if (identity.EventName != "local-unattested")
+        {
+            if (string.IsNullOrWhiteSpace(runnerTemp))
+                throw new InvalidDataException("F20 missing RUNNER_TEMP for evidence export");
+            string exportDir = Path.Combine(runnerTemp, "f20-evidence");
+            Directory.CreateDirectory(exportDir);
+            File.Copy(path, Path.Combine(exportDir, "F20EvidenceLedger.json"), true);
+            var report = new
+            {
+                schemaVersion = 1,
+                manifestSha256 = digest,
+                checkoutSha = identity.CheckoutSha,
+                prHeadSha = identity.PrHeadSha,
+                workflowRunId = identity.RunId,
+                workflowAttempt = identity.RunAttempt,
+                eventName = identity.EventName,
+                sourceCommit = Baseline,
+                mappingCommit = Mapping,
+                approval = new { approved = false, operational = false, gateA12 = "blocked" },
+                observed = observations.Select(o => new { criterion = o.Criterion,
+                    caseId = o.CaseId, actualOutcome = o.ActualOutcome }).ToArray(),
+                manifestMutationRejects = rejected,
+                observedMutationRejects = actualRejected
+            };
+            File.WriteAllText(Path.Combine(exportDir, "F20ExecutionEvidence.json"),
+                JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
+            Console.WriteLine("OK F20 structured CI artifact export: cases=" + observations.Count +
+                ", manifestSha256=" + digest + ", runId=" + identity.RunId);
+        }
         Console.WriteLine($"OK F20 evidence ledger: sha256={digest}, executionCheckoutSha={identity.CheckoutSha}, prHeadSha={identity.PrHeadSha}, workflowRunId={identity.RunId}, workflowAttempt={identity.RunAttempt}, event={identity.EventName}, sourceCommit={Baseline}, A01-A12={cases.Count}, R01-R07 pending={historic.Count}, mutation negatives={rejected}, observed-result negatives={actualRejected}, A12 blocked; offline only.");
     }
 

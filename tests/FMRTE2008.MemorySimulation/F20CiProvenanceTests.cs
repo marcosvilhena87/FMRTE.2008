@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.Http.Headers;
 using System.Text.Json;
 
 namespace FMRTE2008.MemorySimulation;
@@ -24,6 +25,7 @@ internal static class F20CiProvenanceTests
     {
         var actual = ReadFromRunner(root);
         var result = Validate(actual);
+        if (actual.EventName != "local-unattested") VerifyExternalRun(actual, result);
         if (actual.EventName == "local-unattested")
         {
             Console.WriteLine("OK F20 CI identity: local-unattested (no GitHub identity claims); provenance negatives=0.");
@@ -50,6 +52,70 @@ internal static class F20CiProvenanceTests
 
         Console.WriteLine($"OK F20 CI identity: event={result.EventName}, checkoutSha={result.CheckoutSha}, prHeadSha={result.PrHeadSha}, workflowRunId={result.RunId}, attempt={result.RunAttempt}, provenance negatives={rejected}; runner-owned evidence only.");
         return result;
+    }
+
+
+    // The GitHub REST API is an independent read of repository/Actions state,
+    // not a second interpretation of the runner-owned event JSON.
+    // This remains an audit of GitHub evidence, NOT a signature or human approval.
+    private static void VerifyExternalRun(Identity input, Verified verified)
+    {
+        string token = Environment.GetEnvironmentVariable("F20_GITHUB_TOKEN")
+            ?? throw new InvalidDataException("F20 missing read-only GitHub API token");
+        if (string.IsNullOrWhiteSpace(token))
+            throw new InvalidDataException("F20 empty read-only GitHub API token");
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("FMRTE2008-F20-provenance-check/1");
+        client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        JsonDocument Fetch(string url)
+        {
+            using var response = client.GetAsync(url).GetAwaiter().GetResult();
+            if (!response.IsSuccessStatusCode)
+                throw new InvalidDataException("F20 GitHub REST provenance unavailable: HTTP " + (int)response.StatusCode);
+            string json = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            return JsonDocument.Parse(json);
+        }
+
+        string api = "https://api.github.com/repos/" + Repository;
+        using var runDoc = Fetch(api + "/actions/runs/" + verified.RunId);
+        var run = runDoc.RootElement;
+        string expectedRunHead = input.EventName == "pull_request" ? verified.PrHeadSha : verified.CheckoutSha;
+        if (run.GetProperty("id").GetInt64().ToString() != verified.RunId ||
+            run.GetProperty("run_attempt").GetInt32().ToString() != verified.RunAttempt ||
+            Field(run, "event") != input.EventName ||
+            Field(run, "head_sha") != expectedRunHead ||
+            Field(run.GetProperty("repository"), "full_name") != Repository)
+            throw new InvalidDataException("F20 external Actions run identity mismatch");
+
+        if (input.EventName == "pull_request")
+        {
+            using var eventDoc = JsonDocument.Parse(input.EventJson);
+            int number = eventDoc.RootElement.GetProperty("number").GetInt32();
+            if (number != 21 || Field(run, "head_branch") != input.HeadRef)
+                throw new InvalidDataException("F20 unexpected PR identity");
+            bool associated = run.GetProperty("pull_requests").EnumerateArray().Any(pr =>
+                pr.GetProperty("number").GetInt32() == number &&
+                Field(pr.GetProperty("head"), "sha") == verified.PrHeadSha);
+            if (!associated)
+                throw new InvalidDataException("F20 Actions run is not bound to event PR HEAD");
+
+            using var prDoc = Fetch(api + "/pulls/" + number);
+            var pr = prDoc.RootElement;
+            if (Field(pr.GetProperty("head"), "sha") != verified.PrHeadSha ||
+                Field(pr.GetProperty("head"), "ref") != input.HeadRef ||
+                Field(pr.GetProperty("base"), "ref") != "main" ||
+                Field(pr, "state") != "open")
+                throw new InvalidDataException("F20 external live PR HEAD mismatch");
+        }
+        else if (Field(run, "head_branch") != input.Ref["refs/heads/".Length..])
+            throw new InvalidDataException("F20 external push branch mismatch");
+
+        Console.WriteLine("OK F20 external GitHub API attestation: runId=" +
+            verified.RunId + ", attempt=" + verified.RunAttempt +
+            ", event=" + input.EventName + ", runHeadSha=" + expectedRunHead +
+            "; independently fetched from GitHub REST; no map approval.");
     }
 
     private static Identity ReadFromRunner(string root)
