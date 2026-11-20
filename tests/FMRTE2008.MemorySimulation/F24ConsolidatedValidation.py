@@ -129,7 +129,8 @@ def check_reports(m):
         check(rep["canonicalAccepted"] is True and rep["negativeCasesRejected"]==count
               and len(rep["negativeCases"])==count
               and len({x["caseId"] for x in rep["negativeCases"]})==count
-              and all(x["result"]=="rejected" and x["schemaErrorCount"]>0
+              and all((x["actual"] if stage=="F22" else x["result"])=="rejected" and
+                      x["schemaErrorCount"]>0 and (stage!="F22" or x["expected"]=="rejected")
                       for x in rep["negativeCases"]),stage+" independent negative")
         prior=json.loads((OUT/next(x["report"] for x in m["sources"] if x["stage"]==stage)).read_text(encoding="utf-8"))
         check({x["caseId"] for x in prior["negativeCases"]}==
