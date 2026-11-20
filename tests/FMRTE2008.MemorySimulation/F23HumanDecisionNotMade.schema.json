@@ -1,0 +1,316 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "F23.3 no human decision, no map approval",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "source",
+    "humanReview",
+    "gate",
+    "evidence",
+    "riskDecisions",
+    "outcome"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "f23-human-decision-not-made-offline"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "riskRegistryPath",
+        "gateMatrixPath",
+        "provenanceManifestPath",
+        "mappingRepository",
+        "mappingCommit"
+      ],
+      "properties": {
+        "riskRegistryPath": {
+          "const": "tests/FMRTE2008.MemorySimulation/F23ResidualRisks.json"
+        },
+        "gateMatrixPath": {
+          "const": "tests/FMRTE2008.MemorySimulation/F22ApprovalGates.json"
+        },
+        "provenanceManifestPath": {
+          "const": "tests/FMRTE2008.MemorySimulation/F23B03ProvenanceGaps.json"
+        },
+        "mappingRepository": {
+          "const": "marcosvilhena87/FM2008.mapping"
+        },
+        "mappingCommit": {
+          "const": "df5be0493a1ac7be57208ff0e91c2d7193dfec73"
+        }
+      }
+    },
+    "humanReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer",
+        "reviewedAt",
+        "authorityReference",
+        "decision",
+        "decisionReference"
+      ],
+      "properties": {
+        "reviewer": {
+          "const": null
+        },
+        "reviewedAt": {
+          "const": null
+        },
+        "authorityReference": {
+          "const": null
+        },
+        "decision": {
+          "const": "NOT_MADE"
+        },
+        "decisionReference": {
+          "const": null
+        }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gateId",
+        "criterion",
+        "status",
+        "humanSignoff"
+      ],
+      "properties": {
+        "gateId": {
+          "const": "G5"
+        },
+        "criterion": {
+          "const": "A12"
+        },
+        "status": {
+          "const": "GATE-BLOQUEADO"
+        },
+        "humanSignoff": {
+          "const": false
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "b03",
+        "historicalProvenanceAttested",
+        "ciIsHumanApproval",
+        "prReadyIsHumanApproval"
+      ],
+      "properties": {
+        "b03": {
+          "const": "PENDING-DECLARED"
+        },
+        "historicalProvenanceAttested": {
+          "const": false
+        },
+        "ciIsHumanApproval": {
+          "const": false
+        },
+        "prReadyIsHumanApproval": {
+          "const": false
+        }
+      }
+    },
+    "riskDecisions": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": false,
+      "prefixItems": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "riskId",
+            "accepted",
+            "acceptanceReference"
+          ],
+          "properties": {
+            "riskId": {
+              "const": "RA-01"
+            },
+            "accepted": {
+              "const": false
+            },
+            "acceptanceReference": {
+              "const": null
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "riskId",
+            "accepted",
+            "acceptanceReference"
+          ],
+          "properties": {
+            "riskId": {
+              "const": "RA-02"
+            },
+            "accepted": {
+              "const": false
+            },
+            "acceptanceReference": {
+              "const": null
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "riskId",
+            "accepted",
+            "acceptanceReference"
+          ],
+          "properties": {
+            "riskId": {
+              "const": "RA-03"
+            },
+            "accepted": {
+              "const": false
+            },
+            "acceptanceReference": {
+              "const": null
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "riskId",
+            "accepted",
+            "acceptanceReference"
+          ],
+          "properties": {
+            "riskId": {
+              "const": "RA-04"
+            },
+            "accepted": {
+              "const": false
+            },
+            "acceptanceReference": {
+              "const": null
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "riskId",
+            "accepted",
+            "acceptanceReference"
+          ],
+          "properties": {
+            "riskId": {
+              "const": "RA-05"
+            },
+            "accepted": {
+              "const": false
+            },
+            "acceptanceReference": {
+              "const": null
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "riskId",
+            "accepted",
+            "acceptanceReference"
+          ],
+          "properties": {
+            "riskId": {
+              "const": "RA-06"
+            },
+            "accepted": {
+              "const": false
+            },
+            "acceptanceReference": {
+              "const": null
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "riskId",
+            "accepted",
+            "acceptanceReference"
+          ],
+          "properties": {
+            "riskId": {
+              "const": "RA-07"
+            },
+            "accepted": {
+              "const": false
+            },
+            "acceptanceReference": {
+              "const": null
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "riskId",
+            "accepted",
+            "acceptanceReference"
+          ],
+          "properties": {
+            "riskId": {
+              "const": "RA-08"
+            },
+            "accepted": {
+              "const": false
+            },
+            "acceptanceReference": {
+              "const": null
+            }
+          }
+        }
+      ]
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "approved",
+        "operational",
+        "approvedPlayerMaps"
+      ],
+      "properties": {
+        "approved": {
+          "const": false
+        },
+        "operational": {
+          "const": false
+        },
+        "approvedPlayerMaps": {
+          "const": 0
+        }
+      }
+    }
+  }
+}

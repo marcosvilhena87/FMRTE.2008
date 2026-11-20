@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "kind": "f23-human-decision-not-made-offline",
+  "source": {
+    "riskRegistryPath": "tests/FMRTE2008.MemorySimulation/F23ResidualRisks.json",
+    "gateMatrixPath": "tests/FMRTE2008.MemorySimulation/F22ApprovalGates.json",
+    "provenanceManifestPath": "tests/FMRTE2008.MemorySimulation/F23B03ProvenanceGaps.json",
+    "mappingRepository": "marcosvilhena87/FM2008.mapping",
+    "mappingCommit": "df5be0493a1ac7be57208ff0e91c2d7193dfec73"
+  },
+  "humanReview": {
+    "reviewer": null,
+    "reviewedAt": null,
+    "authorityReference": null,
+    "decision": "NOT_MADE",
+    "decisionReference": null
+  },
+  "gate": {
+    "gateId": "G5",
+    "criterion": "A12",
+    "status": "GATE-BLOQUEADO",
+    "humanSignoff": false
+  },
+  "evidence": {
+    "b03": "PENDING-DECLARED",
+    "historicalProvenanceAttested": false,
+    "ciIsHumanApproval": false,
+    "prReadyIsHumanApproval": false
+  },
+  "riskDecisions": [
+    {
+      "riskId": "RA-01",
+      "accepted": false,
+      "acceptanceReference": null
+    },
+    {
+      "riskId": "RA-02",
+      "accepted": false,
+      "acceptanceReference": null
+    },
+    {
+      "riskId": "RA-03",
+      "accepted": false,
+      "acceptanceReference": null
+    },
+    {
+      "riskId": "RA-04",
+      "accepted": false,
+      "acceptanceReference": null
+    },
+    {
+      "riskId": "RA-05",
+      "accepted": false,
+      "acceptanceReference": null
+    },
+    {
+      "riskId": "RA-06",
+      "accepted": false,
+      "acceptanceReference": null
+    },
+    {
+      "riskId": "RA-07",
+      "accepted": false,
+      "acceptanceReference": null
+    },
+    {
+      "riskId": "RA-08",
+      "accepted": false,
+      "acceptanceReference": null
+    }
+  ],
+  "outcome": {
+    "approved": false,
+    "operational": false,
+    "approvedPlayerMaps": 0
+  }
+}
