@@ -20,7 +20,7 @@ internal static class F19CoverageInventoryTests
             ("A03", "tests/FMRTE2008.MemorySimulation/Program.cs",
                 "tabela nula", "await Test(\"tabela nula\""),
             ("A04", "tests/FMRTE2008.MemorySimulation/MinimalIdentityTests.cs",
-                "Nome", "await MinimalIdentityTests.RunAsync();"),
+                "MakeFixture(commonName: null, surname: null)", "await MinimalIdentityTests.RunAsync();"),
             ("A05", "tests/FMRTE2008.MemorySimulation/ReadFailureTests.cs",
                 "Reject<", "await ReadFailureTests.RunAsync();"),
             ("A06", "tests/FMRTE2008.MemorySimulation/RecordConsistencyTests.cs",
