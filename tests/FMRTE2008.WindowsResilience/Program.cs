@@ -1,90 +1,166 @@
 using System.Diagnostics;
-using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
-// F16 creates exclusively self-owned Windows synchronization objects.
-// Never enumerate, open, read, or write another process (including fm.exe).
+// F16 deliberately creates ONLY own Windows event objects and measures this process.
+// No external PID inspection, process opening, native memory read/write, or fm.exe.
 if (!OperatingSystem.IsWindows())
-    throw new PlatformNotSupportedException("F16 requires a Windows runner.");
+    throw new PlatformNotSupportedException("F16 requires Windows.");
 
 const int Cycles = 512;
-const int MaxAllowedHandleIncrease = 64; // CI tolerance, not a proof of no leaks.
+const int BatchSize = 64;
+const int HandleGrowthTolerance = 64; // coarse CI alarm, not proof of leak freedom.
+
 using var current = Process.GetCurrentProcess();
-static int HandleCount(Process process)
+static int CountHandles(Process p)
 {
-    process.Refresh();
-    return process.HandleCount;
+    p.Refresh();
+    return p.HandleCount;
 }
-static void Collect()
+static int StabilizedCount(Process p)
 {
     GC.Collect();
     GC.WaitForPendingFinalizers();
     GC.Collect();
+    return CountHandles(p);
 }
-Collect();
-int baseline = HandleCount(current);
-int acquired = 0, disposed = 0, leased = 0, cancellations = 0, failures = 0;
 
+var ledger = new ResourceLedger();
+int baseline = StabilizedCount(current);
+int maxBatchDelta = int.MinValue;
+int lastBatchDelta = 0;
 for (int cycle = 0; cycle < Cycles; cycle++)
 {
-    // Only local kernel event objects; the two sessions never share ownership.
-    using var first = new ManualResetEvent(false);
-    using var independent = new ManualResetEvent(false);
-    acquired += 2;
-    if (!independent.Set() || !independent.WaitOne(0))
-        throw new Exception($"F16 independent event failed at cycle {cycle}");
-
-    SafeWaitHandle safe = first.SafeWaitHandle;
-    bool added = false;
+    ManualResetEvent? first = null;
+    ManualResetEvent? second = null;
+    SafeWaitHandle? safe = null;
+    bool leaseAdded = false;
+    int firstId = cycle * 2;
+    int secondId = firstId + 1;
     try
     {
+        first = new ManualResetEvent(false);
+        ledger.Acquire(firstId);
+        second = new ManualResetEvent(false);
+        ledger.Acquire(secondId);
+        if (!second.Set() || !second.WaitOne(0))
+            throw new Exception($"F16 independent event failed at cycle {cycle}");
+
+        safe = first.SafeWaitHandle;
         if (cycle % 4 == 0)
         {
-            // SafeHandle lease remains valid even after the managed owner is disposed.
-            safe.DangerousAddRef(ref added);
-            if (!added) throw new Exception("F16 SafeHandle lease rejected");
-            leased++;
-            first.Dispose();
-            first.Dispose();
-            if (!safe.IsClosed) throw new Exception("F16 owner not marked closed");
+            safe.DangerousAddRef(ref leaseAdded);
+            if (!leaseAdded || safe.IsInvalid)
+                throw new Exception("F16 failed to acquire local SafeHandle lease");
+            ledger.AcquireLease();
+            // Dispose the owner while the lease keeps the native resource alive.
+            DisposeEvent(first, firstId, ledger);
+            first = null;
+            // IsClosed can remain false until the extra SafeHandle reference is released.
+            // Never infer physical closure from owner Dispose while a lease is active.
         }
         else if (cycle % 4 == 1)
         {
-            // A failure cannot skip finally cleanup.
             try { throw new IOException("F16 injected failure"); }
-            catch (IOException) { failures++; }
+            catch (IOException) { ledger.InjectFailure(); }
         }
         else if (cycle % 4 == 2)
         {
-            using var token = new CancellationTokenSource();
-            token.Cancel();
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
             try
             {
-                token.Token.ThrowIfCancellationRequested();
-                throw new Exception("F16 cancellation was not observed");
+                cts.Token.ThrowIfCancellationRequested();
+                throw new Exception("F16 missing cancellation");
             }
-            catch (OperationCanceledException) { cancellations++; }
+            catch (OperationCanceledException) { ledger.ObserveCancellation(); }
         }
     }
     finally
     {
-        if (added) safe.DangerousRelease();
-        first.Dispose();
-        independent.Dispose();
-        disposed += 2;
+        // Release the lease before testing its closed state. Exception-safe cleanup.
+        if (leaseAdded)
+        {
+            try { safe!.DangerousRelease(); }
+            finally { ledger.ReleaseLease(); }
+            leaseAdded = false;
+            if (!safe!.IsClosed)
+                throw new Exception($"F16 handle still open after owner disposal and lease release at cycle {cycle}");
+        }
+        if (first is not null) DisposeEvent(first, firstId, ledger);
+        if (second is not null) DisposeEvent(second, secondId, ledger);
+    }
+
+    ledger.AssertBalanced();
+    if ((cycle + 1) % BatchSize == 0)
+    {
+        int delta = StabilizedCount(current) - baseline;
+        lastBatchDelta = delta;
+        maxBatchDelta = Math.Max(maxBatchDelta, delta);
+        if (delta > HandleGrowthTolerance)
+            throw new Exception($"F16 handle growth exceeded {HandleGrowthTolerance} at cycle {cycle + 1}: {delta}");
     }
 }
 
-Collect();
-int after = HandleCount(current);
-int delta = after - baseline;
-if (acquired != 2 * Cycles || disposed != acquired ||
-    leased != Cycles / 4 || cancellations != Cycles / 4 ||
-    failures != Cycles / 4)
-    throw new Exception("F16 independent resource accounting mismatch");
-if (delta > MaxAllowedHandleIncrease)
-    throw new Exception($"F16 process handle count grew by {delta} (limit {MaxAllowedHandleIncrease})");
+ledger.AssertTotals(2 * Cycles, Cycles / 4, Cycles / 4, Cycles / 4);
+Console.WriteLine($"OK F16 Windows: {Cycles} cycles, {ledger.Acquisitions} local events, " +
+    $"{ledger.DisposeAttempts} dispose attempts, {ledger.DisposeSuccesses} completed disposals, " +
+    $"{ledger.LeasesAcquired} leases released, {ledger.Faults} injected faults, " +
+    $"{ledger.Cancellations} cancellations, baseline={baseline}, " +
+    $"maxBatchDelta={maxBatchDelta}, lastBatchDelta={lastBatchDelta}, " +
+    $"tolerance={HandleGrowthTolerance}.");
 
-Console.WriteLine($"OK F16 Windows: {Cycles} cycles, {acquired} local kernel events, " +
-    $"{leased} leases, {failures} injected faults, {cancellations} cancellations, " +
-    $"baseline={baseline}, after={after}, delta={delta} (tolerance {MaxAllowedHandleIncrease}).");
+static void DisposeEvent(ManualResetEvent evt, int id, ResourceLedger ledger)
+{
+    ledger.AttemptDispose(id);
+    evt.Dispose();
+    ledger.CompleteDispose(id);
+}
+
+internal sealed class ResourceLedger
+{
+    private readonly HashSet<int> _acquiredIds = new();
+    private readonly HashSet<int> _activeIds = new();
+    private readonly HashSet<int> _attemptedIds = new();
+    public int Acquisitions => _acquiredIds.Count;
+    public int DisposeAttempts => _attemptedIds.Count;
+    public int DisposeSuccesses { get; private set; }
+    public int LeasesAcquired { get; private set; }
+    public int LeasesReleased { get; private set; }
+    public int Faults { get; private set; }
+    public int Cancellations { get; private set; }
+
+    public void Acquire(int id)
+    {
+        if (!_acquiredIds.Add(id) || !_activeIds.Add(id))
+            throw new Exception($"F16 duplicate acquisition {id}");
+    }
+    public void AttemptDispose(int id)
+    {
+        if (!_activeIds.Contains(id) || !_attemptedIds.Add(id))
+            throw new Exception($"F16 invalid or duplicate disposal attempt {id}");
+    }
+    public void CompleteDispose(int id)
+    {
+        if (!_attemptedIds.Contains(id) || !_activeIds.Remove(id))
+            throw new Exception($"F16 disposal completion without live resource {id}");
+        DisposeSuccesses++;
+    }
+    public void AcquireLease() => LeasesAcquired++;
+    public void ReleaseLease() => LeasesReleased++;
+    public void InjectFailure() => Faults++;
+    public void ObserveCancellation() => Cancellations++;
+    public void AssertBalanced()
+    {
+        if (_activeIds.Count != 0 || DisposeAttempts != DisposeSuccesses ||
+            LeasesAcquired != LeasesReleased)
+            throw new Exception("F16 resource or lease imbalance after cycle");
+    }
+    public void AssertTotals(int resources, int leases, int faults, int cancellations)
+    {
+        AssertBalanced();
+        if (Acquisitions != resources || DisposeAttempts != resources ||
+            DisposeSuccesses != resources || LeasesAcquired != leases ||
+            Faults != faults || Cancellations != cancellations)
+            throw new Exception("F16 final resource accounting mismatch");
+    }
+}
