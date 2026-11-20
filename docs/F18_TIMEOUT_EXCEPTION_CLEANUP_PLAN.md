@@ -33,4 +33,4 @@ Endurecer o teste de **interrupção/timeout e limpeza excepcional** quando tare
 Testes locais de eventos kernel não comprovam a segurança de leituras do processo do jogo, a ausência de todos os interleavings, nem a liberação física sob falha real do SO. Qualquer conclusão deve ficar limitada aos cenários e aos logs auditados.
 
 ## Situação
-**Somente planejamento F18**. Nenhuma suíte F18 foi implementada, aprovada ou integrada à `main` neste marco.
+**Implementação F18 em andamento no PR #19 (Draft).** A suíte `F18TimeoutCleanupTests` usa apenas eventos locais Windows, agendas de timeout controladas, oráculo separado para aquisição/descarte/leases/tarefas, controles negativos e falhas gerenciadas de limpeza. A suíte é executada junto ao F16/F17 pelo workflow `memory-simulation.yml`. O sucesso do CI deve ser conferido no HEAD exato, nos quatro eventos `push` e quatro `pull_request`; não existe aprovação operacional nem autorização de merge.
