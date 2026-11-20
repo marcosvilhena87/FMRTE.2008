@@ -33,6 +33,9 @@ public sealed class CrossPageSnapshotReader(IProcessReader memory, MinimalPlayer
         {
             if (_observed.TryGetValue(item.Index, out var prior) && prior != item)
                 throw new InvalidDataException("F06: jogador divergiu de página anteriormente publicada");
+            if (_observed.Any(prior => prior.Key != item.Index &&
+                (prior.Value.Id == item.Id || prior.Value.PlayerPointer == item.PlayerPointer)))
+                throw new InvalidDataException("F06: ID ou ponteiro duplicado entre páginas");
         }
 
         int extra = first.Count(item => !_observed.ContainsKey(item.Index));
