@@ -33,12 +33,34 @@ public sealed class NativeReadOnlyGuard : IProcessHandleBoundReadSession
 
     public ProcessHandleIdentity GetLiveHandleIdentity()
     {
-        lock (_gate)
+        bool close = false;
+        try
         {
-            ObjectDisposedException.ThrowIf(_disposed || _invalidated, this);
-            // Holding the gate keeps Dispose from closing this handle during
-            // a separate identity query.
-            return _inspect();
+            lock (_gate)
+            {
+                ObjectDisposedException.ThrowIf(_disposed || _invalidated, this);
+                // A standalone inspection is also a resource operation. A
+                // provider failure poisons the handle. If a read owns a lease,
+                // closing is deferred until that read has unwound.
+                try
+                {
+                    return _inspect();
+                }
+                catch
+                {
+                    _invalidated = true;
+                    if (!_reading && !_closed)
+                    {
+                        _closed = true;
+                        close = true;
+                    }
+                    throw;
+                }
+            }
+        }
+        finally
+        {
+            if (close) _close();
         }
     }
 
