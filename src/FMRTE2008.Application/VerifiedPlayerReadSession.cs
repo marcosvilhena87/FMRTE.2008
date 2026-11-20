@@ -99,19 +99,9 @@ public sealed class VerifiedPlayerReadSession : IDisposable
 
         return await GuardedReadAsync(async ct =>
         {
-            var tableReader = new PlayerListReader(_memory);
-            var header = await tableReader.ReadHeaderAsync(_map.HeaderAddress, ct);
-            long start = ((long)pageNumber - 1L) * pageSize;
-            if (start >= header.Count) return (IReadOnlyList<MinimalPlayerIdentity>)Array.Empty<MinimalPlayerIdentity>();
-            int end = (int)Math.Min(header.Count, start + pageSize);
-            var decoder = new MinimalPlayerIdentityReader(_memory, MinimalPlayerIdentityMap.Research802V1);
-            var result = new List<MinimalPlayerIdentity>(end - (int)start);
-            for (int index = (int)start; index < end; index++)
-            {
-                ct.ThrowIfCancellationRequested();
-                result.Add(await decoder.ReadAsync(header, index, ct));
-            }
-            return (IReadOnlyList<MinimalPlayerIdentity>)result.AsReadOnly();
+            return await new ConsistentPlayerPageReader(
+                _memory, MinimalPlayerIdentityMap.Research802V1)
+                .ReadAsync(_map.HeaderAddress, pageNumber, pageSize, ct);
         }, cancellationToken);
     }
 
