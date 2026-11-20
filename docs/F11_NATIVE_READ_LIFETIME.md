@@ -12,9 +12,12 @@ Fortalecer exclusivamente a camada **somente leitura**. O catálogo de produçã
 - Identidade do handle verificada antes e após leitura; alteração de PID/horário de criação ou falha da inspeção invalida a sessão.
 - Cancelamento depois de iniciar a operação nativa não fecha prematuramente o handle; não publica bytes e invalida a sessão quando a operação terminar.
 - Nenhum resultado pode ser publicado depois de um `Dispose()` concorrente.
+- Exceção em `GetLiveHandleIdentity()` fora de `ReadAsync()` invalida e fecha a sessão; se houver leitura em curso, adia o fechamento até seu término.
+- Uma leitura pendente percebe `Dispose()` ou invalidação de outra chamada antes da segunda consulta de identidade, evitando reutilizar um recurso já condenado.
+- Uma tentativa de fechamento que lança exceção continua marcada como tentativa única (não há nova chamada ao `CloseHandle` na mesma sessão).
 
 ## Testes determinísticos
-`NativeReadGuardTests` verifica leituras completas, retorno nativo falso mesmo com contagem completa, falha Win32, leitura parcial, contagem 0 ou superior ao solicitado, exceção inesperada, identidade alterada, argumentos inválidos, cancelamento antes/durante leitura, chamadas concorrentes, `Dispose()` concorrentes, liberação única e isolamento/recuperação por outra sessão. Usa delegates e `TaskCompletionSource`, não relógio nem `Sleep`.
+`NativeReadGuardTests` verifica leituras completas, retorno nativo falso mesmo com contagem completa, falha Win32, leitura parcial, contagem 0 ou superior ao solicitado, exceção inesperada, identidade alterada, argumentos inválidos, cancelamento antes/durante leitura, chamadas concorrentes, `Dispose()` concorrentes, liberação única e isolamento/recuperação por outra sessão. Inclui falha da consulta de identidade isolada, falha da consulta antes/depois de leitura, invalidação concorrente durante leitura, `Dispose()` paralelo e callback de fechamento que lança exceção. Usa delegates e `TaskCompletionSource`, não relógio nem `Sleep`.
 
 ## Riscos residuais
 - As chamadas Win32 e `SafeHandle` reais foram compiladas, mas não testadas com um processo externo. O acesso ao processo real continua bloqueado pela política de produção.
