@@ -52,16 +52,25 @@ public sealed class CrossPageSnapshotReader(IProcessReader memory, MinimalPlayer
         if (!first.SequenceEqual(second))
             throw new InvalidDataException("F06: página divergiu entre leituras");
         await ConfirmObservedAsync(ct);
+        // A previously observed index can change after its own check while
+        // later indexes are being verified. Reverse order reduces that gap.
+        await ConfirmObservedAsync(ct, reverse: true);
+        // The newly requested page can also change while old records are
+        // revalidated. Re-read it once more before committing any state.
+        IReadOnlyList<MinimalPlayerIdentity> finalPage =
+            await _pages.ReadAsync(headerAddress, pageNumber, pageSize, ct);
+        if (!second.SequenceEqual(finalPage))
+            throw new InvalidDataException("F06: página solicitada mudou durante a reconferência");
         if (await new PlayerListReader(memory).ReadHeaderAsync(headerAddress, ct) != initial)
             throw new InvalidDataException("F06: cabeçalho mudou durante a chamada");
         ct.ThrowIfCancellationRequested();
 
         // Commit only on success. Returned arrays are fresh, read-only snapshots.
         // Earlier snapshots never alias this dictionary or future buffers.
-        foreach (var item in second)
+        foreach (var item in finalPage)
             _observed[item.Index] = item;
         _baseline ??= initial;
-        return Array.AsReadOnly(second.ToArray());
+        return Array.AsReadOnly(finalPage.ToArray());
     }
 
     private async Task<PlayerListHeader> ReadAndConfirmHeaderAsync(CancellationToken ct)
@@ -72,9 +81,12 @@ public sealed class CrossPageSnapshotReader(IProcessReader memory, MinimalPlayer
         return current;
     }
 
-    private async Task ConfirmObservedAsync(CancellationToken ct)
+    private async Task ConfirmObservedAsync(CancellationToken ct, bool reverse = false)
     {
-        foreach (var prior in _observed.OrderBy(item => item.Key))
+        IEnumerable<KeyValuePair<int, MinimalPlayerIdentity>> ordered =
+            reverse ? _observed.OrderByDescending(item => item.Key)
+                    : _observed.OrderBy(item => item.Key);
+        foreach (var prior in ordered)
         {
             ct.ThrowIfCancellationRequested();
             await ReadAndConfirmHeaderAsync(ct);
