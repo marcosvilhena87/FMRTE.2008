@@ -16,6 +16,7 @@ internal static class F20EvidenceLedgerTests
     private const string Mapping = "df5be0493a1ac7be57208ff0e91c2d7193dfec73";
     private const string Source = "tests/FMRTE2008.MemorySimulation/F19ExecutableNegativeCases.cs";
     private const string Repo = "marcosvilhena87/FMRTE.2008";
+    private const string ExpectedManifestSha256 = "204ef8c6f4e156a12d097d3107a2e953f20efcd4be9ef4e9a473da91bd2f23cb";
 
     private static readonly (string Id, string Outcome)[] Expected =
     [
@@ -40,6 +41,8 @@ internal static class F20EvidenceLedgerTests
             "F20EvidenceLedger.json");
         byte[] source = File.ReadAllBytes(path);
         string digest = Convert.ToHexString(SHA256.HashData(source)).ToLowerInvariant();
+        if (digest != ExpectedManifestSha256)
+            throw new InvalidDataException("F20 manifest differs from independently pinned SHA-256");
         var ledger = JsonNode.Parse(source) ?? throw new InvalidDataException("F20 ledger absent");
         Validate(ledger);
         var cases = ledger["testEvidence"]!.AsArray();
@@ -71,6 +74,11 @@ internal static class F20EvidenceLedgerTests
         Mutation("historical-approval", x => x["historicalEvidence"]![3]!["status"] = "APPROVED");
         Mutation("missing-R07", x => x["historicalEvidence"]!.AsArray().RemoveAt(6));
         Mutation("missing-A12", x => x["testEvidence"]!.AsArray().RemoveAt(11));
+        Mutation("extra-root-property", x => x["approvedByCi"] = true);
+        Mutation("extra-approval-property", x => x["approval"]!["approvedByCi"] = true);
+        Mutation("extra-test-property", x => x["testEvidence"]![0]!["approved"] = true);
+        Mutation("extra-historical-property", x => x["historicalEvidence"]![0]!["approved"] = true);
+        Mutation("extra-workflow-property", x => x["testEvidence"]![1]!["workflowRunId"] = "invented");
 
         // The manifest references a fixed historical source commit, not a
         // claim that this current run was executed at that old commit.
@@ -85,7 +93,32 @@ internal static class F20EvidenceLedgerTests
             !runner.Contains("F20EvidenceLedgerTests.Run();", StringComparison.Ordinal))
             throw new InvalidDataException("F20 runner not linked to executable evidence cases");
 
-        Console.WriteLine($"OK F20 evidence ledger: sha256={digest}, A01-A12={cases.Count}, R01-R07 pending={historic.Count}, mutation negatives={rejected}, A12 blocked; offline only.");
+        var observations = F20ExecutionEvidence.Snapshot();
+        ValidateObserved(ledger, observations);
+        int actualRejected = 0;
+        void RejectObservedMutation(string name,
+            Func<F20ExecutionEvidence.Observed[], F20ExecutionEvidence.Observed[]> mutate)
+        {
+            var altered = mutate(observations.ToArray());
+            try { ValidateObserved(ledger, altered); }
+            catch (InvalidDataException) { actualRejected++; return; }
+            throw new Exception("F20 observed evidence mutation was not rejected: " + name);
+        }
+        RejectObservedMutation("case-omitted", rows => rows.Take(11).ToArray());
+        RejectObservedMutation("case-duplicated", rows => rows.Take(11).Append(rows[0]).ToArray());
+        RejectObservedMutation("wrong-result", rows => { rows[3] = rows[3] with { ActualOutcome = "success" }; return rows; });
+        RejectObservedMutation("wrong-id", rows => { rows[0] = rows[0] with { CaseId = "other" }; return rows; });
+        RejectObservedMutation("wrong-criterion", rows => { rows[5] = rows[5] with { Criterion = "A02" }; return rows; });
+
+        string executionSha = Environment.GetEnvironmentVariable("GITHUB_SHA") ?? "";
+        string executionRunId = Environment.GetEnvironmentVariable("GITHUB_RUN_ID") ?? "";
+        if (string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!ValidSha(executionSha) || !long.TryParse(executionRunId, out long runNumber) || runNumber <= 0)
+                throw new InvalidDataException("F20 CI execution identity missing");
+        }
+        else { executionSha = "local-unattested"; executionRunId = "local-unattested"; }
+        Console.WriteLine($"OK F20 evidence ledger: sha256={digest}, executionHeadSha={executionSha}, workflowRunId={executionRunId}, sourceCommit={Baseline}, A01-A12={cases.Count}, R01-R07 pending={historic.Count}, mutation negatives={rejected}, observed-result negatives={actualRejected}, A12 blocked; offline only.");
     }
 
     private static void Validate(JsonNode node)
@@ -98,11 +131,13 @@ internal static class F20EvidenceLedgerTests
 
     private static void ValidateStructure(JsonNode root)
     {
+        RequireKeys(root, "schemaVersion", "approval", "baselineCommit", "mappingReferenceCommit", "testEvidence", "historicalEvidence");
         if (Number(root, "schemaVersion") != 1 ||
             Field(root, "baselineCommit") != Baseline ||
             Field(root, "mappingReferenceCommit") != Mapping)
             Fail("version/immutable base mismatch");
         var approval = root["approval"]!;
+        RequireKeys(approval, "approved", "operational", "gateA12", "decisionReference");
         if (approval["approved"]!.GetValue<bool>() ||
             approval["operational"]!.GetValue<bool>() ||
             Field(approval, "gateA12") != "blocked" ||
@@ -114,6 +149,7 @@ internal static class F20EvidenceLedgerTests
         for (int i=0; i<Expected.Length; i++)
         {
             var row=tests[i] ?? throw new InvalidDataException("null evidence row");
+            RequireKeys(row, "criterion", "caseId", "testSuite", "expectedOutcome", "evidenceKind", "sourceRepo", "sourceCommit", "sourcePath", "executor", "observedAt", "status", "limits");
             var criterion = $"A{i+1:00}";
             if (Field(row,"criterion") != criterion ||
                 !distinct.Add(Field(row,"criterion")) ||
@@ -136,6 +172,7 @@ internal static class F20EvidenceLedgerTests
         for (int i=0; i<history.Count; i++)
         {
             var row=history[i] ?? throw new InvalidDataException("null historical row");
+            RequireKeys(row, "id", "evidenceKind", "sourceRepo", "sourceCommit", "sourcePath", "executor", "observedAt", "environment", "status", "limits");
             if (Field(row,"id") != $"R{i+1:00}" ||
                 Field(row,"evidenceKind") != "historical-user-report" ||
                 Field(row,"sourceRepo") != "marcosvilhena87/FM2008.mapping" ||
@@ -147,6 +184,33 @@ internal static class F20EvidenceLedgerTests
                 row["executor"] is not null || row["observedAt"] is not null ||
                 row["environment"] is not null)
                 Fail("B03 historical unknowns must remain pending");
+        }
+    }
+
+    private static void RequireKeys(JsonNode node, params string[] keys)
+    {
+        var obj = node.AsObject();
+        if (obj.Count != keys.Length ||
+            obj.Select(k => k.Key).Except(keys, StringComparer.Ordinal).Any() ||
+            keys.Any(key => !obj.ContainsKey(key)))
+            throw new InvalidDataException("F20 unknown or missing schema property");
+    }
+
+    private static void ValidateObserved(JsonNode ledger,
+        IReadOnlyList<F20ExecutionEvidence.Observed> records)
+    {
+        var expectedRows = ledger["testEvidence"]!.AsArray();
+        if (records.Count != 12) throw new InvalidDataException("F20 missing observed cases");
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        for (int i = 0; i < expectedRows.Count; i++)
+        {
+            var row = expectedRows[i]!;
+            var actual = records[i];
+            if (actual.Criterion != Field(row, "criterion") ||
+                actual.CaseId != Field(row, "caseId") ||
+                actual.ActualOutcome != Field(row, "expectedOutcome") ||
+                !seen.Add(actual.Criterion + "/" + actual.CaseId))
+                throw new InvalidDataException("F20 observed outcome mismatch: " + i);
         }
     }
 
