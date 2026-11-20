@@ -14,7 +14,7 @@
       "observationId": "R01",
       "sourceRepo": "marcosvilhena87/FM2008.mapping",
       "sourceCommit": "df5be0493a1ac7be57208ff0e91c2d7193dfec73",
-      "sourcePath": "research/builds/fm2008-8.0.2v1-minimal-map-approval-matrix.md",
+      "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
       "evidenceScope": "Build identification and process identity",
       "reportedResult": "ReadOnlyProbe recognized build 8.0.2v1 for reported PID 24860; absent PID 1234 was rejected; modified-build rejection not observed.",
       "executor": null,
@@ -24,14 +24,14 @@
       "externalCorroboration": null,
       "provenanceStatus": "PENDING-DECLARED",
       "limitations": "B03: original observation metadata and independent corroboration remain unavailable; CI does not approve a map.",
-      "sourceBlobSha": "b29d4e21d97209a52fc009ab3d4eac03b4956f49",
+      "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
       "sourceEvidenceStatus": "user-reported-not-independently-audited"
     },
     {
       "observationId": "R02",
       "sourceRepo": "marcosvilhena87/FM2008.mapping",
       "sourceCommit": "df5be0493a1ac7be57208ff0e91c2d7193dfec73",
-      "sourcePath": "research/builds/fm2008-8.0.2v1-minimal-map-approval-matrix.md",
+      "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
       "evidenceScope": "Module base and address calculation across sessions",
       "reportedResult": "ModuleBase 0x00400000 and HeaderVA 0x01B1ED4C reported; no naturally relocated module base observed.",
       "executor": null,
@@ -41,7 +41,7 @@
       "externalCorroboration": null,
       "provenanceStatus": "PENDING-DECLARED",
       "limitations": "B03: original observation metadata and independent corroboration remain unavailable; CI does not approve a map.",
-      "sourceBlobSha": "b29d4e21d97209a52fc009ab3d4eac03b4956f49",
+      "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
       "sourceEvidenceStatus": "user-reported-not-independently-audited"
     },
     {
