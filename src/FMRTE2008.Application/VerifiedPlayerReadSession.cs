@@ -73,7 +73,18 @@ public sealed class VerifiedPlayerReadSession : IDisposable
         // O opener deverá comparar novamente o executável do PID, não confiar apenas no parâmetro identity.
         var memory = await opener.OpenVerifiedAsync(processId, identity, cancellationToken);
         if (memory is null) throw new InvalidOperationException("O opener não forneceu sessão");
-        return new VerifiedPlayerReadSession(memory, map);
+        try
+        {
+            // A cancellation may occur while the opener is returning its
+            // handle. Never publish such a session or leak the acquired handle.
+            cancellationToken.ThrowIfCancellationRequested();
+            return new VerifiedPlayerReadSession(memory, map);
+        }
+        catch
+        {
+            memory.Dispose();
+            throw;
+        }
     }
 
     public async Task<PlayerIdRecord> ReadFirstPlayerIdAsync(CancellationToken cancellationToken = default)
@@ -137,11 +148,13 @@ public sealed class VerifiedPlayerReadSession : IDisposable
                 return result;
             }
         }
-        catch (Exception error) when (error is IOException or InvalidDataException
-            or OverflowException or ArgumentOutOfRangeException
-            or OperationCanceledException or ObjectDisposedException
-            or System.ComponentModel.Win32Exception)
+        catch
         {
+            // Once the read lease has been acquired, *any* provider exception
+            // makes the session untrustworthy. Do not reuse the handle or
+            // publish later data, even for unforeseen failure types.
+            // Argument validation and concurrent-read rejection happen
+            // before the try and therefore do not poison a healthy session.
             lock (_lifetimeGate)
                 _invalidated = true;
             throw;
