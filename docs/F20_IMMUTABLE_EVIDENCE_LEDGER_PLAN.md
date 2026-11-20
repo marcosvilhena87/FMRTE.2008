@@ -46,3 +46,17 @@ Nenhum acesso a `fm.exe`, `OpenProcess` de jogo, `ReadProcessMemory`/escrita em 
 - **R03, evidência executável:** `F19ExecutableNegativeCases.Case` grava `criterion`, `caseId` e `actualOutcome` somente após o cenário negativo concluir sua verificação. Exceções são registradas pelo tipo realmente capturado; resultados booleanos vêm de condições verificadas. `F20ExecutionEvidence` rejeita duplicações e `ValidateObserved` compara exatamente os 12 resultados, na ordem, com o manifesto. Cinco mutações adicionais sobre as observações reais testam omissão, duplicação, ID trocado, critério divergente e resultado falso. O inventário textual antigo continua auxiliar e **não** é a prova do resultado individual.
 
 **B03 permanece PENDENTE:** não há executor/ambiente/data históricos confirmados individualmente para R01–R07. **A12 permanece GATE-BLOQUEADO.** Mesmo com CI aprovado, não há permissão de abrir `fm.exe`, escrita, ativação WPF, promoção de mapas ou alteração do repositório `FM2008.mapping`. O PR #21 permanece em Draft e não deve ser integrado sem revisão específica.
+
+
+## Fechamento F20-R02 — evidência CI por evento e worktree
+
+A rotina `F20CiProvenanceTests` valida, dentro do runner Windows:
+- o commit realmente utilizado no checkout via `git rev-parse HEAD` (somente repositório de código) contra `GITHUB_SHA`;
+- `GITHUB_RUN_ID`, `GITHUB_RUN_ATTEMPT`, `GITHUB_REPOSITORY`, `GITHUB_REF` e o JSON do evento `GITHUB_EVENT_PATH`;
+- **push:** `event.after == GITHUB_SHA == git rev-parse HEAD`, além de `event.ref == GITHUB_REF`;
+- **pull_request:** `GITHUB_SHA == git rev-parse HEAD` descreve o commit de merge sintético do checkout; `event.pull_request.head.sha` descreve o HEAD real do PR e é registrado separadamente como `prHeadSha`; `GITHUB_HEAD_REF` e `refs/pull/{number}/merge` são confrontados com o evento.
+- oito mutações negativas executam o mesmo validador alterando SHA do checkout, SHA de execução, número/tentativa do workflow, repositório, tipo de evento, HEAD declarado e ref.
+
+O relatório usa nomes distintos: `executionCheckoutSha`, `prHeadSha`, `workflowRunId`, `workflowAttempt`, `sourceCommit`, `sha256`. O HEAD do PR também deve ser reconfirmado pelos metadados da execução no GitHub antes do parecer formal, pois o próprio runner não é um atestador independente. Fora de GitHub Actions, a evidência é `local-unattested`, jamais apresentada como execução verificada.
+
+**Limites conservadores:** um SHA-256 do manifesto fixado no código não substitui assinatura externa contra alteração coordenada do código e do JSON; o evento JSON e o repositório checkout pertencem ao mesmo contexto GitHub Actions. O F20 não constitui aprovação A12. B03 permanece PENDENTE; `NoApprovedPlayerMaps`, `approved=false`, `operational=false`, sem `fm.exe`, escrita, promoção de mapas ou alterações em `FM2008.mapping`. PR #21 continua Draft, sem merge.
