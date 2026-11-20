@@ -33,6 +33,6 @@ public sealed class VerifiedWindowsProcessOpener : IVerifiedProcessOpener
                 return Task.FromResult<IProcessReadSession>(
                     new WindowsReadOnlyProcessSession(processId));
             },
-            cancellationToken);
+            cancellationToken, requireHandleIdentity: true);
     }
 }
