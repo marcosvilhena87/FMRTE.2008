@@ -26,7 +26,7 @@ internal static class F17ResourceConcurrencyTests
 
         Console.WriteLine($"OK F17 Windows: {PartialCycles * 4} partial-acquisition scenarios, " +
             $"64 modeled exceptional cleanups, {ConcurrentCycles} coordinated lease/Dispose scenarios, " +
-            "5 negative ledger controls (self-owned kernel events only).");
+            "6 negative ledger controls and 1 exceptional independent-close control (self-owned kernel events only).");
     }
 
     private static void RunAcquisitionFaults()
@@ -161,8 +161,16 @@ internal static class F17ResourceConcurrencyTests
                 finally
                 {
                     // This must run even if the worker failed or timed out.
-                    if (!ledger.HasAttempt(secondId)) DisposeRecorded(second, secondId, ledger);
-                    if (!ledger.HasAttempt(firstId)) DisposeRecorded(first, firstId, ledger);
+                    try
+                    {
+                        if (!ledger.HasAttempt(secondId)) DisposeRecorded(second, secondId, ledger);
+                    }
+                    finally
+                    {
+                        // Never let cleanup of the independent event suppress a
+                        // required attempt to clean up the original event.
+                        if (!ledger.HasAttempt(firstId)) DisposeRecorded(first, firstId, ledger);
+                    }
                 }
             }
             if (!safe.IsClosed)
@@ -191,6 +199,51 @@ internal static class F17ResourceConcurrencyTests
         ExpectFailure(() => { var l = new Ledger(); l.Acquire(1); l.AttemptDispose(1); l.AttemptDispose(1); });
         ExpectFailure(() => { var l = new Ledger(); l.Acquire(1); l.AttemptDispose(1); l.MarkUncertain(1); l.CompleteDispose(1); });
         ExpectFailure(() => { var l = new Ledger(); l.LeaseAcquired(); l.AssertBalanced(); });
+        ExpectFailure(() => { var l = new Ledger(); l.Acquire(1); l.AttemptDispose(1); l.CompleteDispose(1); l.MarkUncertain(1); });
+        ExceptionalIndependentCloseControl();
+    }
+
+    private static void ExceptionalIndependentCloseControl()
+    {
+        // Model an exceptional close callback while still closing both
+        // self-owned Windows objects. The independent close must be attempted.
+        var l = new Ledger();
+        using var first = new ManualResetEvent(false);
+        using var second = new ManualResetEvent(false);
+        l.Acquire(800001);
+        l.Acquire(800002);
+        bool secondAttempted = false;
+        try
+        {
+            try
+            {
+                l.AttemptDispose(800001);
+                throw new IOException("F17 injected first close callback failure");
+            }
+            catch (IOException)
+            {
+                l.MarkUncertain(800001);
+            }
+            finally
+            {
+                try { first.Dispose(); }
+                finally
+                {
+                    secondAttempted = true;
+                    DisposeRecorded(second, 800002, l);
+                }
+            }
+        }
+        finally
+        {
+            // Using declarations also guarantee local event cleanup on failure.
+        }
+        if (!secondAttempted || l.DisposeAttempts != 2 ||
+            l.DisposeCompletions != 1 || l.UncertainReleases != 1)
+            throw new Exception("F17 exceptional cleanup suppressed independent close");
+        using var recovered = new ManualResetEvent(false);
+        if (!recovered.Set() || !recovered.WaitOne(0))
+            throw new Exception("F17 independent recovery after failed callback");
     }
 
     private static void ExpectFailure(Action action)
@@ -256,7 +309,7 @@ internal static class F17ResourceConcurrencyTests
         public void MarkUncertain(int id)
         {
             lock (_gate)
-                if (!_attempted.Contains(id) || !_uncertain.Add(id))
+                if (!_attempted.Contains(id) || !_active.Contains(id) || !_uncertain.Add(id))
                     throw new InvalidOperationException("F17 invalid uncertain release");
         }
         public void LeaseAcquired() { lock (_gate) _leasesTaken++; }
