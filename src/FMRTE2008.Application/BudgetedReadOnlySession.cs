@@ -18,6 +18,8 @@ public sealed class BudgetedReadOnlySession : IProcessReadSession
     private int _reads;
     private long _bytes;
     private bool _disposed;
+    private bool _innerDisposed;
+    private int _activeReads;
 
     public BudgetedReadOnlySession(IProcessReadSession inner,
         int maxReads = DefaultMaxReads, long maxBytes = DefaultMaxBytes)
@@ -29,7 +31,7 @@ public sealed class BudgetedReadOnlySession : IProcessReadSession
         _maxBytes = maxBytes;
     }
 
-    public Task<byte[]> ReadAsync(nuint address, int length,
+    public async Task<byte[]> ReadAsync(nuint address, int length,
         CancellationToken cancellationToken)
     {
         lock (_gate)
@@ -40,21 +42,52 @@ public sealed class BudgetedReadOnlySession : IProcessReadSession
             if (_reads >= _maxReads || length > _maxBytes - _bytes)
                 throw new InvalidDataException("F07: orçamento de leituras da sessão esgotado");
 
-            // Consume the budget before invoking the underlying reader, even
-            // if the read fails or is canceled. No retries on a failed session.
+            // Atomically reserve the budget and a lifetime lease before any
+            // asynchronous operation can begin. Failed attempts are charged.
             _reads++;
             _bytes += length;
+            _activeReads++;
         }
-        return _inner.ReadAsync(address, length, cancellationToken);
+        try
+        {
+            byte[] bytes = await _inner.ReadAsync(address, length, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            lock (_gate)
+            {
+                // A disposed wrapper must never publish an in-flight result.
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                return bytes;
+            }
+        }
+        finally
+        {
+            bool close = false;
+            lock (_gate)
+            {
+                _activeReads--;
+                if (_disposed && _activeReads == 0 && !_innerDisposed)
+                {
+                    _innerDisposed = true;
+                    close = true;
+                }
+            }
+            if (close) _inner.Dispose();
+        }
     }
 
     public void Dispose()
     {
+        bool close = false;
         lock (_gate)
         {
             if (_disposed) return;
             _disposed = true;
+            if (_activeReads == 0 && !_innerDisposed)
+            {
+                _innerDisposed = true;
+                close = true;
+            }
         }
-        _inner.Dispose();
+        if (close) _inner.Dispose();
     }
 }
