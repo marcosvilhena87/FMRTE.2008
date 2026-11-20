@@ -18,6 +18,15 @@ Consolidar a proteção das fases F07, F10 e F11 executando cenários combinados
 
 Os modos 6–9 usam `TaskCompletionSource` para controlar explicitamente as interleavings; sem `Sleep`, relógio ou scheduling probabilístico. Cada cenário cria um handle fictício novo, passa-o por `NativeReadOnlyGuard` e `BudgetedReadOnlySession`, verifica a não publicação de dados inválidos e **uma única tentativa de fechamento por handle adquirido**. A recuperação usa um segundo handle fictício separado, nunca reabilita o primeiro.
 
+## Revisão final — falhas encadeadas e isolamento paralelo
+A auditoria identificou que os 1.280 cenários iniciais exercitavam uma falha por sessão seguida de recuperação bem-sucedida, sem cobrir tentativa de recuperação também falha. `RecoveryChainStressTests` acrescenta **384 cenários** (64 identidades × 6 modos) com:
+- falha nativa, seguida de outra sessão com leitura parcial, seguida de terceira sessão nova que recupera;
+- duas sessões independentes em uso paralelo enquanto uma leitura permanece pendente;
+- fechamento da camada externa ou interna durante leitura pendente e cancelamento;
+- falha de consulta isolada de identidade enquanto uma leitura está pendente;
+- conferência de fechamento único e não publicação de resultado após invalidação.
+A repetição usa seeds e modos explícitos, sem espera por relógio e sem escalonamento aleatório. Uma falha de sessão nunca reativa handles anteriores.
+
 ## Limites dos resultados
 - Testes determinísticos cobrem interleavings enumerados, não o espaço infinito de threads e escalonamentos.
 - `Dispose()` da camada de budget é intencionalmente diferido enquanto uma leitura está em voo.
