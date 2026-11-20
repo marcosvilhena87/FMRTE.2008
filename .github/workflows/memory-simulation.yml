@@ -45,6 +45,10 @@ jobs:
         run: python tests/FMRTE2008.MemorySimulation/F24HumanReviewValidation.py
       - name: F24.3 - esquema humano independente e mutacoes adversariais
         run: python tests/FMRTE2008.MemorySimulation/F24HumanReviewIndependentValidation.py
+      - name: F24.4 - consolidar fontes, identidade CI e resultados estruturados
+        run: python tests/FMRTE2008.MemorySimulation/F24ConsolidatedValidation.py
+      - name: F24.4 - verificar esquema independente e mutacoes
+        run: python tests/FMRTE2008.MemorySimulation/F24ConsolidatedIndependentValidation.py
       - name: F16 - robustez de handles Windows locais sem fm.exe
         run: dotnet run --project tests/FMRTE2008.WindowsResilience/FMRTE2008.WindowsResilience.csproj --configuration Release
       - name: Publicar evidencias F20 com digest independente do Git
