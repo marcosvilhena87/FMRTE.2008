@@ -1,0 +1,522 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "F22 non-operational approval gap matrix",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "mappingSource",
+    "decision",
+    "gates"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "f22-offline-approval-gap-matrix"
+    },
+    "mappingSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "commit"
+      ],
+      "properties": {
+        "repository": {
+          "const": "marcosvilhena87/FM2008.mapping"
+        },
+        "commit": {
+          "const": "df5be0493a1ac7be57208ff0e91c2d7193dfec73"
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "approved",
+        "operational",
+        "gateA12",
+        "b03",
+        "humanApproval"
+      ],
+      "properties": {
+        "approved": {
+          "const": false
+        },
+        "operational": {
+          "const": false
+        },
+        "gateA12": {
+          "const": "GATE-BLOQUEADO"
+        },
+        "b03": {
+          "const": "PENDING-DECLARED"
+        },
+        "humanApproval": {
+          "type": "null"
+        }
+      }
+    },
+    "gates": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "prefixItems": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "gateId",
+            "title",
+            "criteria",
+            "risks",
+            "documentaryStatus",
+            "approvalDecision",
+            "evidenceKind",
+            "evidenceReferences",
+            "documentedContext",
+            "pendingIssue"
+          ],
+          "properties": {
+            "gateId": {
+              "const": "G1"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "criteria": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^A(0[1-9]|1[0-2])$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "risks": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^RA-0[1-8]$"
+              },
+              "uniqueItems": true
+            },
+            "documentaryStatus": {
+              "const": "PENDING"
+            },
+            "approvalDecision": {
+              "const": "NOT_APPROVED"
+            },
+            "evidenceKind": {
+              "const": "historical-user-report-plus-offline-ci-not-equivalent"
+            },
+            "evidenceReferences": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observationId",
+                  "sourcePath",
+                  "sourceBlobSha",
+                  "provenanceStatus"
+                ],
+                "properties": {
+                  "observationId": {
+                    "type": "string",
+                    "pattern": "^R0[1-7]$"
+                  },
+                  "sourcePath": {
+                    "type": "string",
+                    "minLength": 10
+                  },
+                  "sourceBlobSha": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{40}$"
+                  },
+                  "provenanceStatus": {
+                    "const": "PENDING-DECLARED"
+                  }
+                }
+              }
+            },
+            "documentedContext": {
+              "type": "string",
+              "minLength": 10
+            },
+            "pendingIssue": {
+              "type": "string",
+              "minLength": 10
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "gateId",
+            "title",
+            "criteria",
+            "risks",
+            "documentaryStatus",
+            "approvalDecision",
+            "evidenceKind",
+            "evidenceReferences",
+            "documentedContext",
+            "pendingIssue"
+          ],
+          "properties": {
+            "gateId": {
+              "const": "G2"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "criteria": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^A(0[1-9]|1[0-2])$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "risks": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^RA-0[1-8]$"
+              },
+              "uniqueItems": true
+            },
+            "documentaryStatus": {
+              "const": "PENDING"
+            },
+            "approvalDecision": {
+              "const": "NOT_APPROVED"
+            },
+            "evidenceKind": {
+              "const": "historical-user-report-plus-offline-ci-not-equivalent"
+            },
+            "evidenceReferences": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observationId",
+                  "sourcePath",
+                  "sourceBlobSha",
+                  "provenanceStatus"
+                ],
+                "properties": {
+                  "observationId": {
+                    "type": "string",
+                    "pattern": "^R0[1-7]$"
+                  },
+                  "sourcePath": {
+                    "type": "string",
+                    "minLength": 10
+                  },
+                  "sourceBlobSha": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{40}$"
+                  },
+                  "provenanceStatus": {
+                    "const": "PENDING-DECLARED"
+                  }
+                }
+              }
+            },
+            "documentedContext": {
+              "type": "string",
+              "minLength": 10
+            },
+            "pendingIssue": {
+              "type": "string",
+              "minLength": 10
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "gateId",
+            "title",
+            "criteria",
+            "risks",
+            "documentaryStatus",
+            "approvalDecision",
+            "evidenceKind",
+            "evidenceReferences",
+            "documentedContext",
+            "pendingIssue"
+          ],
+          "properties": {
+            "gateId": {
+              "const": "G3"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "criteria": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^A(0[1-9]|1[0-2])$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "risks": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^RA-0[1-8]$"
+              },
+              "uniqueItems": true
+            },
+            "documentaryStatus": {
+              "const": "PENDING"
+            },
+            "approvalDecision": {
+              "const": "NOT_APPROVED"
+            },
+            "evidenceKind": {
+              "const": "historical-user-report-plus-offline-ci-not-equivalent"
+            },
+            "evidenceReferences": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observationId",
+                  "sourcePath",
+                  "sourceBlobSha",
+                  "provenanceStatus"
+                ],
+                "properties": {
+                  "observationId": {
+                    "type": "string",
+                    "pattern": "^R0[1-7]$"
+                  },
+                  "sourcePath": {
+                    "type": "string",
+                    "minLength": 10
+                  },
+                  "sourceBlobSha": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{40}$"
+                  },
+                  "provenanceStatus": {
+                    "const": "PENDING-DECLARED"
+                  }
+                }
+              }
+            },
+            "documentedContext": {
+              "type": "string",
+              "minLength": 10
+            },
+            "pendingIssue": {
+              "type": "string",
+              "minLength": 10
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "gateId",
+            "title",
+            "criteria",
+            "risks",
+            "documentaryStatus",
+            "approvalDecision",
+            "evidenceKind",
+            "evidenceReferences",
+            "documentedContext",
+            "pendingIssue"
+          ],
+          "properties": {
+            "gateId": {
+              "const": "G4"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "criteria": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^A(0[1-9]|1[0-2])$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "risks": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^RA-0[1-8]$"
+              },
+              "uniqueItems": true
+            },
+            "documentaryStatus": {
+              "const": "PENDING"
+            },
+            "approvalDecision": {
+              "const": "NOT_APPROVED"
+            },
+            "evidenceKind": {
+              "const": "historical-user-report-plus-offline-ci-not-equivalent"
+            },
+            "evidenceReferences": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observationId",
+                  "sourcePath",
+                  "sourceBlobSha",
+                  "provenanceStatus"
+                ],
+                "properties": {
+                  "observationId": {
+                    "type": "string",
+                    "pattern": "^R0[1-7]$"
+                  },
+                  "sourcePath": {
+                    "type": "string",
+                    "minLength": 10
+                  },
+                  "sourceBlobSha": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{40}$"
+                  },
+                  "provenanceStatus": {
+                    "const": "PENDING-DECLARED"
+                  }
+                }
+              }
+            },
+            "documentedContext": {
+              "type": "string",
+              "minLength": 10
+            },
+            "pendingIssue": {
+              "type": "string",
+              "minLength": 10
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "gateId",
+            "title",
+            "criteria",
+            "risks",
+            "documentaryStatus",
+            "approvalDecision",
+            "evidenceKind",
+            "evidenceReferences",
+            "documentedContext",
+            "pendingIssue"
+          ],
+          "properties": {
+            "gateId": {
+              "const": "G5"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1
+            },
+            "criteria": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^A(0[1-9]|1[0-2])$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "risks": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^RA-0[1-8]$"
+              },
+              "uniqueItems": true
+            },
+            "documentaryStatus": {
+              "const": "PENDING"
+            },
+            "approvalDecision": {
+              "const": "NOT_APPROVED"
+            },
+            "evidenceKind": {
+              "const": "historical-user-report-plus-offline-ci-not-equivalent"
+            },
+            "evidenceReferences": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observationId",
+                  "sourcePath",
+                  "sourceBlobSha",
+                  "provenanceStatus"
+                ],
+                "properties": {
+                  "observationId": {
+                    "type": "string",
+                    "pattern": "^R0[1-7]$"
+                  },
+                  "sourcePath": {
+                    "type": "string",
+                    "minLength": 10
+                  },
+                  "sourceBlobSha": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{40}$"
+                  },
+                  "provenanceStatus": {
+                    "const": "PENDING-DECLARED"
+                  }
+                }
+              }
+            },
+            "documentedContext": {
+              "type": "string",
+              "minLength": 10
+            },
+            "pendingIssue": {
+              "type": "string",
+              "minLength": 10
+            }
+          }
+        }
+      ]
+    }
+  }
+}

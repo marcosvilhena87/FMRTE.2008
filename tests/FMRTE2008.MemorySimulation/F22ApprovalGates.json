@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "kind": "f22-offline-approval-gap-matrix",
+  "mappingSource": {
+    "repository": "marcosvilhena87/FM2008.mapping",
+    "commit": "df5be0493a1ac7be57208ff0e91c2d7193dfec73"
+  },
+  "decision": {
+    "approved": false,
+    "operational": false,
+    "gateA12": "GATE-BLOQUEADO",
+    "b03": "PENDING-DECLARED",
+    "humanApproval": null
+  },
+  "gates": [
+    {
+      "gateId": "G1",
+      "title": "Build identity and module addressing",
+      "criteria": [
+        "A01",
+        "A02"
+      ],
+      "risks": [
+        "RA-01",
+        "RA-06"
+      ],
+      "documentaryStatus": "PENDING",
+      "approvalDecision": "NOT_APPROVED",
+      "evidenceKind": "historical-user-report-plus-offline-ci-not-equivalent",
+      "evidenceReferences": [
+        {
+          "observationId": "R01",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+          "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+          "provenanceStatus": "PENDING-DECLARED"
+        },
+        {
+          "observationId": "R02",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+          "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+          "provenanceStatus": "PENDING-DECLARED"
+        }
+      ],
+      "documentedContext": "Observed build recognition, process identity and preferred module base only",
+      "pendingIssue": "Identity/relocation coverage remains partial; historical observation metadata B03 not attested"
+    },
+    {
+      "gateId": "G2",
+      "title": "Player identity and names",
+      "criteria": [
+        "A03",
+        "A04",
+        "A05",
+        "A10"
+      ],
+      "risks": [
+        "RA-05"
+      ],
+      "documentaryStatus": "PENDING",
+      "approvalDecision": "NOT_APPROVED",
+      "evidenceKind": "historical-user-report-plus-offline-ci-not-equivalent",
+      "evidenceReferences": [
+        {
+          "observationId": "R03",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+          "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+          "provenanceStatus": "PENDING-DECLARED"
+        },
+        {
+          "observationId": "R04",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-r04-profile-checks.csv",
+          "sourceBlobSha": "45d50af819f0429e1bf887fee4b908e262b88d49",
+          "provenanceStatus": "PENDING-DECLARED"
+        },
+        {
+          "observationId": "R07",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-r07-consolidation.md",
+          "sourceBlobSha": "5af5157240def9b9b31d2a9533377f89892b94a6",
+          "provenanceStatus": "PENDING-DECLARED"
+        }
+      ],
+      "documentedContext": "Two saves have user-declared 9/9 full-name and ID sample confirmations",
+      "pendingIssue": "Whole-table accuracy, individual common-name components and independently audited provenance remain unverified"
+    },
+    {
+      "gateId": "G3",
+      "title": "Consistency and lifecycle",
+      "criteria": [
+        "A06",
+        "A07",
+        "A08"
+      ],
+      "risks": [
+        "RA-02",
+        "RA-03",
+        "RA-04"
+      ],
+      "documentaryStatus": "PENDING",
+      "approvalDecision": "NOT_APPROVED",
+      "evidenceKind": "historical-user-report-plus-offline-ci-not-equivalent",
+      "evidenceReferences": [
+        {
+          "observationId": "R05",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-r05-week-advance-2026-11-18.md",
+          "sourceBlobSha": "6f9be7702e01e4023aef95d1efa540c399887d1f",
+          "provenanceStatus": "PENDING-DECLARED"
+        },
+        {
+          "observationId": "R06",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-r06-normal-restart-2026-11-18.md",
+          "sourceBlobSha": "89a1dae5102062d5e880158a7aa485a1483b028c",
+          "provenanceStatus": "PENDING-DECLARED"
+        },
+        {
+          "observationId": "R07",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-r07-consolidation.md",
+          "sourceBlobSha": "5af5157240def9b9b31d2a9533377f89892b94a6",
+          "provenanceStatus": "PENDING-DECLARED"
+        }
+      ],
+      "documentedContext": "Offline resilience tests and user-reported natural count change and restart observations",
+      "pendingIssue": "Mid-read termination, ABA and real-session recovery are not demonstrated by fixtures"
+    },
+    {
+      "gateId": "G4",
+      "title": "Read-only scope and compatibility",
+      "criteria": [
+        "A09",
+        "A11"
+      ],
+      "risks": [
+        "RA-07",
+        "RA-08"
+      ],
+      "documentaryStatus": "PENDING",
+      "approvalDecision": "NOT_APPROVED",
+      "evidenceKind": "historical-user-report-plus-offline-ci-not-equivalent",
+      "evidenceReferences": [
+        {
+          "observationId": "R01",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+          "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+          "provenanceStatus": "PENDING-DECLARED"
+        },
+        {
+          "observationId": "R07",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-r07-consolidation.md",
+          "sourceBlobSha": "5af5157240def9b9b31d2a9533377f89892b94a6",
+          "provenanceStatus": "PENDING-DECLARED"
+        }
+      ],
+      "documentedContext": "Offline deny-all catalog and refusal of unapproved maps are established in tests",
+      "pendingIssue": "No approved real process access; legacy candidate offsets are never activated"
+    },
+    {
+      "gateId": "G5",
+      "title": "Independent human decision",
+      "criteria": [
+        "A12"
+      ],
+      "risks": [],
+      "documentaryStatus": "PENDING",
+      "approvalDecision": "NOT_APPROVED",
+      "evidenceKind": "historical-user-report-plus-offline-ci-not-equivalent",
+      "evidenceReferences": [
+        {
+          "observationId": "R01",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+          "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+          "provenanceStatus": "PENDING-DECLARED"
+        },
+        {
+          "observationId": "R02",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+          "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+          "provenanceStatus": "PENDING-DECLARED"
+        },
+        {
+          "observationId": "R03",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-distributed-sampling-2026-11-18.md",
+          "sourceBlobSha": "fcbdffa2b846af2a36feaebca25b59a27f7c0912",
+          "provenanceStatus": "PENDING-DECLARED"
+        },
+        {
+          "observationId": "R04",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-first-save-r04-profile-checks.csv",
+          "sourceBlobSha": "45d50af819f0429e1bf887fee4b908e262b88d49",
+          "provenanceStatus": "PENDING-DECLARED"
+        },
+        {
+          "observationId": "R05",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-r05-week-advance-2026-11-18.md",
+          "sourceBlobSha": "6f9be7702e01e4023aef95d1efa540c399887d1f",
+          "provenanceStatus": "PENDING-DECLARED"
+        },
+        {
+          "observationId": "R06",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-r06-normal-restart-2026-11-18.md",
+          "sourceBlobSha": "89a1dae5102062d5e880158a7aa485a1483b028c",
+          "provenanceStatus": "PENDING-DECLARED"
+        },
+        {
+          "observationId": "R07",
+          "sourcePath": "research/builds/fm2008-8.0.2v1-r07-consolidation.md",
+          "sourceBlobSha": "5af5157240def9b9b31d2a9533377f89892b94a6",
+          "provenanceStatus": "PENDING-DECLARED"
+        }
+      ],
+      "documentedContext": "Document checks and CI are not a human authorization",
+      "pendingIssue": "No formal signoff of residual risks, provenance or operational map; A12 remains blocked"
+    }
+  ]
+}
