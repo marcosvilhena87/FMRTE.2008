@@ -35,6 +35,8 @@ public sealed class VerifiedPlayerReadSession : IDisposable
     private readonly IProcessReadSession _memory;
     private readonly ApprovedPlayerMap _map;
     private bool _disposed;
+    private bool _invalidated;
+    private readonly SemaphoreSlim _readGate = new(1, 1);
     private VerifiedPlayerReadSession(IProcessReadSession memory, ApprovedPlayerMap map)
     {
         _memory = memory;
@@ -71,10 +73,12 @@ public sealed class VerifiedPlayerReadSession : IDisposable
 
     public async Task<PlayerIdRecord> ReadFirstPlayerIdAsync(CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-        var reader = new PlayerListReader(_memory);
-        PlayerListHeader header = await reader.ReadHeaderAsync(_map.HeaderAddress, cancellationToken);
-        return await reader.ReadPlayerIdAsync(header, 0, _map.PlayerIdOffset, cancellationToken);
+        return await GuardedReadAsync(async ct =>
+        {
+            var reader = new PlayerListReader(_memory);
+            PlayerListHeader header = await reader.ReadHeaderAsync(_map.HeaderAddress, ct);
+            return await reader.ReadPlayerIdAsync(header, 0, _map.PlayerIdOffset, ct);
+        }, cancellationToken);
     }
 
     /// <summary>
@@ -84,7 +88,6 @@ public sealed class VerifiedPlayerReadSession : IDisposable
     public async Task<IReadOnlyList<MinimalPlayerIdentity>> ReadIdentityPageAsync(
         int pageNumber, int pageSize = 20, CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
         if (pageNumber < 1) throw new ArgumentOutOfRangeException(nameof(pageNumber));
         if (pageSize is < 1 or > 100) throw new ArgumentOutOfRangeException(nameof(pageSize));
         if (_map.PlayerIdOffset != 256 || _map.Variant != "8.0.2v1" ||
@@ -92,19 +95,60 @@ public sealed class VerifiedPlayerReadSession : IDisposable
                 StringComparison.OrdinalIgnoreCase))
             throw new UnauthorizedAccessException("Mapa aprovado não corresponde aos offsets mínimos de identificação");
 
-        var tableReader = new PlayerListReader(_memory);
-        var header = await tableReader.ReadHeaderAsync(_map.HeaderAddress, cancellationToken);
-        long start = ((long)pageNumber - 1L) * pageSize;
-        if (start >= header.Count) return Array.Empty<MinimalPlayerIdentity>();
-        int end = (int)Math.Min(header.Count, start + pageSize);
-        var decoder = new MinimalPlayerIdentityReader(_memory, MinimalPlayerIdentityMap.Research802V1);
-        var result = new List<MinimalPlayerIdentity>(end - (int)start);
-        for (int index = (int)start; index < end; index++)
+        return await GuardedReadAsync(async ct =>
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            result.Add(await decoder.ReadAsync(header, index, cancellationToken));
+            var tableReader = new PlayerListReader(_memory);
+            var header = await tableReader.ReadHeaderAsync(_map.HeaderAddress, ct);
+            long start = ((long)pageNumber - 1L) * pageSize;
+            if (start >= header.Count) return (IReadOnlyList<MinimalPlayerIdentity>)Array.Empty<MinimalPlayerIdentity>();
+            int end = (int)Math.Min(header.Count, start + pageSize);
+            var decoder = new MinimalPlayerIdentityReader(_memory, MinimalPlayerIdentityMap.Research802V1);
+            var result = new List<MinimalPlayerIdentity>(end - (int)start);
+            for (int index = (int)start; index < end; index++)
+            {
+                ct.ThrowIfCancellationRequested();
+                result.Add(await decoder.ReadAsync(header, index, ct));
+            }
+            return (IReadOnlyList<MinimalPlayerIdentity>)result.AsReadOnly();
+        }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Fail closed after a truncated/invalid read, loss of the process or interrupted
+    /// operation. No subsequent read may reuse the handle; caller must open a new
+    /// verified session. This does not approve any real mapping.
+    /// </summary>
+    private async Task<T> GuardedReadAsync<T>(Func<CancellationToken, Task<T>> read,
+        CancellationToken cancellationToken)
+    {
+        ObjectDisposedException.ThrowIf(_disposed || _invalidated, this);
+        // Reject concurrent session use rather than interleaving page/identity reads.
+        if (!await _readGate.WaitAsync(0, cancellationToken))
+            throw new InvalidOperationException("Outra leitura da sessão está em andamento");
+        try
+        {
+            ObjectDisposedException.ThrowIf(_disposed || _invalidated, this);
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                T result = await read(cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                ObjectDisposedException.ThrowIf(_disposed || _invalidated, this);
+                return result;
+            }
+            catch (Exception error) when (error is IOException or OverflowException
+                or OperationCanceledException or ObjectDisposedException
+                or System.ComponentModel.Win32Exception)
+            {
+                _invalidated = true;
+                _memory.Dispose();
+                throw;
+            }
         }
-        return result;
+        finally
+        {
+            _readGate.Release();
+        }
     }
 
     public void Dispose()
