@@ -110,15 +110,8 @@ internal static class F20EvidenceLedgerTests
         RejectObservedMutation("wrong-id", rows => { rows[0] = rows[0] with { CaseId = "other" }; return rows; });
         RejectObservedMutation("wrong-criterion", rows => { rows[5] = rows[5] with { Criterion = "A02" }; return rows; });
 
-        string executionSha = Environment.GetEnvironmentVariable("GITHUB_SHA") ?? "";
-        string executionRunId = Environment.GetEnvironmentVariable("GITHUB_RUN_ID") ?? "";
-        if (string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!ValidSha(executionSha) || !long.TryParse(executionRunId, out long runNumber) || runNumber <= 0)
-                throw new InvalidDataException("F20 CI execution identity missing");
-        }
-        else { executionSha = "local-unattested"; executionRunId = "local-unattested"; }
-        Console.WriteLine($"OK F20 evidence ledger: sha256={digest}, executionHeadSha={executionSha}, workflowRunId={executionRunId}, sourceCommit={Baseline}, A01-A12={cases.Count}, R01-R07 pending={historic.Count}, mutation negatives={rejected}, observed-result negatives={actualRejected}, A12 blocked; offline only.");
+        var identity = F20CiProvenanceTests.Run(root);
+        Console.WriteLine($"OK F20 evidence ledger: sha256={digest}, executionCheckoutSha={identity.CheckoutSha}, prHeadSha={identity.PrHeadSha}, workflowRunId={identity.RunId}, workflowAttempt={identity.RunAttempt}, event={identity.EventName}, sourceCommit={Baseline}, A01-A12={cases.Count}, R01-R07 pending={historic.Count}, mutation negatives={rejected}, observed-result negatives={actualRejected}, A12 blocked; offline only.");
     }
 
     private static void Validate(JsonNode node)
