@@ -117,7 +117,7 @@ internal static class F18TimeoutCleanupTests
         try
         {
             await entered.Task.WaitAsync(Deadline);
-            MustReject(oracle.AssertSettled); // A missing signal leaves a real task pending.
+            MustReject(() => oracle.AssertSettled()); // A missing signal leaves a real task pending.
             if (pending.IsCompleted)
                 throw new Exception("F18 pending task unexpectedly completed");
         }
