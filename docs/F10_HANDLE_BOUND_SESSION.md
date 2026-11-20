@@ -14,7 +14,9 @@ Aprofundar F09 por **identidade lida do handle adquirido**, sem habilitar mapas,
 ## Evidência offline
 `HandleBindingTests`: aceitação de handle correto, rejeição de handle não vinculado, PID trocado, início de processo divergente, morte detectada, mudança entre inspeções, cancelamento pendente, duas sessões com PID igual e instâncias distintas, interrupção no meio da leitura e recuperação por nova sessão.
 
-Testes usam somente objetos injetados. Nenhum acesso real a `fm.exe`.
+`HandleLifecycleRaceTests` cobre adicionalmente o caminho completo `VerifiedPlayerReadSession` com leitura em andamento e encerramento do processo, duas chamadas concorrentes, `Dispose()` simultâneos, cancelamento e isolamento de outra sessão. Confirma que nenhum resultado pendente é publicado após falha, que o descarte é único e que uma sessão independente permanece utilizável.
+
+Testes usam somente objetos injetados e sincronização controlada por `TaskCompletionSource`. Nenhum acesso real a `fm.exe`.
 
 ## Limitações e riscos residuais
 - `GetProcessId`, `GetProcessTimes` e `GetExitCodeProcess` interrogam o handle real apenas no adaptador Windows; este comportamento não está validado por testes de integração com processo externo.
