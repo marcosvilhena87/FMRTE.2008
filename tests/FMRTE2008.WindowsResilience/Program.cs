@@ -114,6 +114,8 @@ for (int cycle = 0; cycle < Cycles; cycle++)
 }
 
 ledger.AssertTotals(2 * Cycles, Cycles / 4, Cycles / 4, Cycles / 4);
+await FMRTE2008.WindowsResilience.F17ResourceConcurrencyTests.RunAsync();
+
 Console.WriteLine($"OK F16 Windows: {Cycles} cycles, {ledger.Acquisitions} local events, " +
     $"{ledger.DisposeAttempts} dispose attempts, {ledger.DisposeSuccesses} completed disposals, " +
     $"{ledger.LeasesAcquired} leases released, {ledger.Faults} injected faults, " +
