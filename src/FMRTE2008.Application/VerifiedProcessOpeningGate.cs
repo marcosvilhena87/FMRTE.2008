@@ -14,7 +14,7 @@ public static class VerifiedProcessOpeningGate
         int processId, ExecutableIdentity expected,
         Func<CancellationToken, Task<ProcessOpeningEvidence>> inspect,
         Func<CancellationToken, Task<IProcessReadSession>> acquire,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, bool requireHandleIdentity = false)
     {
         if (processId <= 0) throw new ArgumentOutOfRangeException(nameof(processId));
         ArgumentNullException.ThrowIfNull(expected);
@@ -34,10 +34,16 @@ public static class VerifiedProcessOpeningGate
             session = await acquire(cancellationToken)
                 ?? throw new InvalidOperationException("Abertura não forneceu sessão");
             cancellationToken.ThrowIfCancellationRequested();
+            // F10: production requires identity read from the acquired kernel
+            // handle, not merely a second lookup by potentially recycled PID.
+            if (requireHandleIdentity)
+                ConfirmHandleIdentity(session, before);
             var after = await inspect(cancellationToken);
             Validate(after, processId, expected);
             if (before != after)
                 throw new InvalidOperationException("Instância do processo mudou durante a abertura");
+            if (requireHandleIdentity)
+                ConfirmHandleIdentity(session, after);
             cancellationToken.ThrowIfCancellationRequested();
             return session;
         }
@@ -46,6 +52,17 @@ public static class VerifiedProcessOpeningGate
             session?.Dispose();
             throw;
         }
+    }
+
+    private static void ConfirmHandleIdentity(IProcessReadSession session,
+        ProcessOpeningEvidence evidence)
+    {
+        if (session is not IProcessHandleBoundReadSession bound)
+            throw new UnauthorizedAccessException("Handle sem prova de identidade: abertura bloqueada");
+        var actual = bound.GetLiveHandleIdentity();
+        if (actual.ProcessId != evidence.ProcessId ||
+            actual.StartTimeUtcTicks != evidence.StartTimeUtcTicks)
+            throw new InvalidOperationException("Handle pertence a outra instância do processo");
     }
 
     private static void Validate(ProcessOpeningEvidence? evidence, int pid, ExecutableIdentity expected)
