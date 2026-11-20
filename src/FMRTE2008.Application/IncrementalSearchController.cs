@@ -14,25 +14,38 @@ public sealed class IncrementalSearchController
     private int _cursor;
     private int _count;
     private string _query = "";
-    public bool IsFailed { get; private set; }
-    public string? FailureReason { get; private set; }
-    public int NextIndex => _cursor;
-    public int TotalCount => _count;
-    public bool Complete => _cursor >= _count;
-    public IReadOnlyList<MinimalPlayerIdentity> Matches => _matches.AsReadOnly();
-    public IReadOnlyList<PlayerReadFailure> Failures => _failures.AsReadOnly();
+    private int _generation;
+    private int _inFlight;
+    private readonly object _stateGate = new();
+    private bool _isFailed;
+    private string? _failureReason;
+    public bool IsFailed { get { lock (_stateGate) return _isFailed; } }
+    public string? FailureReason { get { lock (_stateGate) return _failureReason; } }
+    public int NextIndex { get { lock (_stateGate) return _cursor; } }
+    public int TotalCount { get { lock (_stateGate) return _count; } }
+    public bool Complete { get { lock (_stateGate) return _cursor >= _count; } }
+    // Copy instead of exposing a live wrapper over a mutable collection.
+    // A UI reader receives a stable snapshot even during Restart/NextAsync.
+    public IReadOnlyList<MinimalPlayerIdentity> Matches
+    {
+        get { lock (_stateGate) return Array.AsReadOnly(_matches.ToArray()); }
+    }
+    public IReadOnlyList<PlayerReadFailure> Failures
+    {
+        get { lock (_stateGate) return Array.AsReadOnly(_failures.ToArray()); }
+    }
 
     public IncrementalSearchController(Func<IIndexedPlayerSource> sourceFactory)
     {
         _sourceFactory = sourceFactory ?? throw new ArgumentNullException(nameof(sourceFactory));
-        _scanner = CreateScanner();
+        _scanner = CreateScanner(out _count);
     }
 
-    private IncrementalPlayerSearch CreateScanner()
+    private IncrementalPlayerSearch CreateScanner(out int count)
     {
         var source = _sourceFactory() ?? throw new InvalidOperationException("Fonte indisponível");
         var scanner = new IncrementalPlayerSearch(source);
-        _count = source.Count;
+        count = source.Count;
         return scanner;
     }
 
@@ -42,42 +55,90 @@ public sealed class IncrementalSearchController
         string term = (query ?? "").Trim();
         if (term.Length > IncrementalPlayerSearch.MaxQueryLength)
             throw new ArgumentOutOfRangeException(nameof(query));
-        _query = term;
-        _cursor = 0;
-        _matches.Clear();
-        _failures.Clear();
-        IsFailed = false;
-        FailureReason = null;
-        _scanner = CreateScanner();
+        // Build the replacement first. A failed factory must not corrupt the
+        // current state or make a pending result appear to belong to a new run.
+        var replacement = CreateScanner(out int replacementCount);
+        lock (_stateGate)
+        {
+            _generation++;
+            _query = term;
+            _cursor = 0;
+            _matches.Clear();
+            _failures.Clear();
+            _isFailed = false;
+            _failureReason = null;
+            _scanner = replacement;
+            _count = replacementCount;
+        }
     }
 
     public async Task<IncrementalPlayerSearchResult> NextAsync(
         int batchSize = 3, CancellationToken cancellationToken = default)
     {
-        if (IsFailed)
-            throw new InvalidOperationException("Sessão encerrada; reinicie a pesquisa");
+        if (Interlocked.CompareExchange(ref _inFlight, 1, 0) != 0)
+            throw new InvalidOperationException("Já existe uma leitura em andamento");
         try
         {
-            var result = await _scanner.ScanNextAsync(_query, _cursor, batchSize, cancellationToken);
-            _matches.AddRange(result.Matches);
-            _failures.AddRange(result.Failures);
-            _cursor = result.NextIndex;
-            return result;
+            int generation;
+            IncrementalPlayerSearch scanner;
+            int cursor;
+            string query;
+            lock (_stateGate)
+            {
+                if (_isFailed)
+                    throw new InvalidOperationException("Sessão encerrada; reinicie a pesquisa");
+                generation = _generation;
+                scanner = _scanner;
+                cursor = _cursor;
+                query = _query;
+            }
+            try
+            {
+                var result = await scanner.ScanNextAsync(query, cursor, batchSize, cancellationToken);
+                // Commit and generation check MUST be atomic with Restart.
+                lock (_stateGate)
+                {
+                    if (generation != _generation)
+                        throw new InvalidOperationException("Sessão substituída durante a leitura");
+                    _matches.AddRange(result.Matches);
+                    _failures.AddRange(result.Failures);
+                    _cursor = result.NextIndex;
+                }
+                return result;
+            }
+            catch (OperationCanceledException)
+            {
+                lock (_stateGate)
+                {
+                    if (generation == _generation)
+                        Invalidate("Pesquisa cancelada; reinicie para continuar");
+                }
+                throw;
+            }
+            catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception
+                or ObjectDisposedException or InvalidOperationException or InvalidDataException)
+            {
+                lock (_stateGate)
+                {
+                    if (generation == _generation)
+                        Invalidate("Fonte indisponível ou dados inconsistentes; reinicie para uma nova sessão");
+                }
+                throw;
+            }
         }
-        catch (OperationCanceledException)
+        finally
         {
-            // Cancellation may interrupt a batch mid-record; discard the cursor
-            // and require a fresh scan to avoid presenting a partial batch.
-            IsFailed = true;
-            FailureReason = "Pesquisa cancelada; reinicie para continuar";
-            throw;
+            Volatile.Write(ref _inFlight, 0);
         }
-        catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception
-            or ObjectDisposedException or InvalidOperationException)
-        {
-            IsFailed = true;
-            FailureReason = "Fonte indisponível; reinicie para uma nova sessão";
-            throw;
-        }
+    }
+
+    private void Invalidate(string reason)
+    {
+        _isFailed = true;
+        _failureReason = reason;
+        _cursor = 0;
+        _matches.Clear();
+        _failures.Clear();
+        _generation++;
     }
 }
