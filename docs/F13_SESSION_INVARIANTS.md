@@ -25,6 +25,13 @@ Adicionalmente, são **384 interleavings controlados** (64 seeds × 6 modos) com
 5. Falha da inspeção de identidade invalida a sessão; segunda leitura concorrente é rejeitada.
 6. Sessão independente pode avançar sem interferência de outra sessão pendente ou falha.
 
+## Revisão final — independência do oráculo e limpeza excepcional
+A auditoria identificou que o teste inicial contava publicações com base no próprio retorno da operação. Agora mantém uma contagem esperada **antes** de observar a resposta e a confronta com o resultado de cada transição.
+
+A suíte adicional `StateTransitionAuditTests` implementa **uma tabela de referência separada** com os estados lógicos Active/Invalid/Disposed, eventos de leitura normal, falha Win32, falha de identidade, leitura parcial, Dispose e consulta saudável. Ela enumera todas as **1.296 sequências de quatro eventos** (6⁴), verificando por transição contagens esperadas de inspeções, consultas nativas, resultados publicados e fechamentos sem ler os campos privados da implementação.
+
+Acrescenta ainda **64 cenários de fechamento excepcional**, assegurando que falhas no callback de liberação não gerem tentativas duplicadas nem permitam reutilização da sessão. Como na implementação atual, a exceção de fechamento pode substituir a exceção primária; isto deve ser preservado como risco residual, e o teste não comprova liberação física do recurso quando o callback lança exceção.
+
 ## Limitações
 Trata-se de uma exploração exaustiva **somente dentro do alfabeto e profundidade delimitados**. Não demonstra cobertura de todos os interleavings, escalonamentos reais, travamentos nativos, ABA ou consistência atômica de memória.
 
