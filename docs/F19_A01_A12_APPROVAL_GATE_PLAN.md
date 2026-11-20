@@ -44,4 +44,4 @@ Consolidar um checklist reproduzível, por critério A01–A12, que diferencia e
 Nenhum contato com `fm.exe` em planejamento/testes; nenhuma leitura ou escrita da memória real, `WriteProcessMemory`, edição de atributos ou saves, ligação da WPF a fonte live, habilitação por percentual amostral ou promoção dos 229 offsets legados. Este documento não autoriza aprovação operacional, nem um futuro merge.
 
 ## Situação
-**F19 apenas planejado; nenhuma implementação, aprovação A12 ou alteração de mapa realizada.**
+**F19 em implementação no PR #20 (Draft).** Adicionados testes negativos determinísticos offline em `tests/FMRTE2008.MemorySimulation/F19ApprovalGateTests.cs`, integrados ao runner de memória simulada, e matriz de rastreabilidade `docs/F19_A01_A12_EVIDENCE_TRACEABILITY.md`. A suíte cobre diretamente negativos de A01/A02/A09/A10/A11/A12 e referencia testes existentes para A03–A08. Aprovação A12 e uso operacional permanecem BLOQUEADOS; a integração depende de CI 8/8 no HEAD e revisão final, sem merge. Nenhuma alteração em `FM2008.mapping`.
