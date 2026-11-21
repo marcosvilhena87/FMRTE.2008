@@ -19,6 +19,55 @@ static class Tests
     private static void Main()
     {
         var roster=new OfflineExpandedRoster().Snapshot();
+        // F27-R01/R02: independently enforce name/category semantics, not just counts.
+        Check(OfflineAttributeCategoryCatalog.Resolve("Passe")==OfflineAttributeCategory.Technical,
+            "Passe is always technical");
+        Check(OfflineAttributeCategoryCatalog.Resolve("Visão")==OfflineAttributeCategory.Mental,
+            "Visão is always mental");
+        Check(OfflineAttributeCategoryCatalog.Resolve("Força")==OfflineAttributeCategory.Physical,
+            "Força is always physical");
+        Check(roster.All(p=>p.CategorizedAttributes.All(a=>
+            a.Category==OfflineAttributeCategoryCatalog.Resolve(a.Attribute.Name))),
+            "all actual roster entries agree with closed name catalog");
+        var passes=roster.SelectMany(p=>p.CategorizedAttributes)
+            .Where(a=>a.Attribute.Name=="Passe").ToArray();
+        Check(passes.Length==3&&passes.All(a=>a.Category==OfflineAttributeCategory.Technical),
+            "same attribute category remains stable across players");
+
+        var sourceAttributes=roster[0].Profile.Attributes;
+        var reordered=sourceAttributes.Reverse().ToArray();
+        var classifiedReordered=OfflineAttributeCategoryCatalog.Categorize(reordered);
+        Check(classifiedReordered.Select(x=>x.Attribute.Name).SequenceEqual(reordered.Select(x=>x.Name)),
+            "reordering preserves attribute order");
+        Check(classifiedReordered.All(a=>
+            a.Category==OfflineAttributeCategoryCatalog.Resolve(a.Attribute.Name)),
+            "reordering never changes semantic category");
+        var validReordered=new OfflineExpandedPlayer(roster[0].Profile,roster[0].Club,classifiedReordered);
+        Check(validReordered.AttributesFor(OfflineAttributeCategory.Mental).Single().Name=="Visão",
+            "mental category preserved after reordering");
+
+        var swapped=roster[0].CategorizedAttributes.ToArray();
+        swapped[0]=new OfflineCategorizedAttribute(swapped[0].Attribute,OfflineAttributeCategory.Mental);
+        Reject<ArgumentException>(()=>new OfflineExpandedPlayer(
+            roster[0].Profile,roster[0].Club,swapped),
+            "domain rejects wrong category even if names/counts match");
+        var changed=new [] { new OfflineAttribute("Atributo Desconhecido",10) };
+        Reject<ArgumentException>(()=>OfflineAttributeCategoryCatalog.Categorize(changed),
+            "unrecognized name fail closed");
+        Reject<ArgumentException>(()=>OfflineAttributeCategoryCatalog.Resolve("passe"),
+            "unexpected casing not silently mapped");
+        Reject<ArgumentException>(()=>OfflineAttributeCategoryCatalog.Resolve("Passe "),
+            "whitespace-altered names rejected");
+        Reject<ArgumentException>(()=>OfflineAttributeCategoryCatalog.Categorize(
+            new[]{new OfflineAttribute("Passe",10),new OfflineAttribute("passe",11)}),
+            "case-insensitive duplicates blocked");
+        Reject<ArgumentNullException>(()=>OfflineAttributeCategoryCatalog.Categorize(null!),
+            "null list rejected");
+        Check(OfflineAttributeCategoryCatalog.Categorize(sourceAttributes)
+            is IList<OfflineCategorizedAttribute>,"returned collection supports readonly contract");
+        Reject<NotSupportedException>(()=>((IList<OfflineCategorizedAttribute>)
+            OfflineAttributeCategoryCatalog.Categorize(sourceAttributes)).Clear(),
+            "classified category list cannot be mutated");
         Check(roster.Count==3,"three invented players");
         Check(roster.Select(p=>p.Profile.DemonstrationId).Distinct().Count()==3,"unique demo ids");
         Check(roster.Select(p=>p.Club.DemonstrationId).Distinct().Count()==3,"unique invented clubs");
