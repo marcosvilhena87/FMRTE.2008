@@ -1,0 +1,48 @@
+name: F32 human review preparation
+on:
+  pull_request:
+    paths:
+      - "evidence/f32/**"
+      - "tools/f32/**"
+      - "docs/F32_*.md"
+      - ".github/workflows/f32-human-review.yml"
+  push:
+    paths:
+      - "evidence/f32/**"
+      - "tools/f32/**"
+      - "docs/F32_*.md"
+      - ".github/workflows/f32-human-review.yml"
+permissions:
+  contents: read
+jobs:
+  f32-human-review-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify F32 closed dossier and negative tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/f32/validate_review.py --self-test --report "$RUNNER_TEMP/f32-report.json"
+          python3 tools/f32/validate_review.py --self-test --report "$RUNNER_TEMP/f32-report-again.json"
+          cmp "$RUNNER_TEMP/f32-report.json" "$RUNNER_TEMP/f32-report-again.json"
+          sha256sum "$RUNNER_TEMP/f32-report.json"
+          python3 - "$RUNNER_TEMP/f32-report.json" <<'PY'
+          import json,sys
+          r=json.load(open(sys.argv[1],encoding="utf-8"))
+          assert r["result"]=="PASS" and r["criteria"]==12 and r["risks"]==8 and r["gates"]==5
+          assert r["sourceReferences"]==5 and r["primaryEvidenceSlots"]==12
+          assert r["negativeCount"]==86 and len(r["negativeCases"])==86
+          assert len({c["id"] for c in r["negativeCases"]})==86
+          assert all(c["result"]=="REJECTED" for c in r["negativeCases"])
+          assert r["approved"] is False and r["operational"] is False
+          assert r["humanDecision"]=="NOT_MADE"
+          assert r["historicEvidenceIndependentlyAuthenticated"] is False
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: f32-human-review-offline-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/f32-report.json
+          if-no-files-found: error
+          retention-days: 30
