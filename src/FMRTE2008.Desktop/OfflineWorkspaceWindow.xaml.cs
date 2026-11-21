@@ -32,8 +32,15 @@ public partial class OfflineWorkspaceWindow : Window
     private void Previous_Click(object sender, RoutedEventArgs e) =>
         Render(_presenter.PreviousPlayer());
 
-    private void Club_Click(object sender, RoutedEventArgs e) =>
-        Render(_presenter.ShowClub(_presenter.Current().SelectedClub?.DemonstrationId));
+    private void Club_Click(object sender, RoutedEventArgs e)
+    {
+        var clubId = _presenter.Current().SelectedClub?.DemonstrationId;
+        var view = _presenter.ShowClub(clubId);
+        // The visible query reflects the exact-ID club filter, so re-searching it
+        // preserves the same club even if future fixtures share similar names.
+        QueryBox.Text = view.SelectedClub?.DemonstrationId ?? "";
+        Render(view);
+    }
 
     private void PlayersGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
