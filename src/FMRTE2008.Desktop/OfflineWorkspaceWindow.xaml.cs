@@ -13,6 +13,8 @@ public partial class OfflineWorkspaceWindow : Window
     private bool _unavailable;
     private int _resetFailuresForTests;
     private bool _persistentResetFailureForTests;
+    // Internal diagnostic counter; no public API or external data source.
+    internal int ResetInvocationsForTests { get; private set; }
 
     public OfflineWorkspaceWindow() : this(OfflineRosterScenario.Baseline) { }
 
@@ -131,8 +133,11 @@ public partial class OfflineWorkspaceWindow : Window
     private void Search_Click(object sender, RoutedEventArgs e) =>
         RunSafely(() => _presenter.Search(QueryBox.Text));
 
-    private void Reset_Click(object sender, RoutedEventArgs e) =>
+    private void Reset_Click(object sender, RoutedEventArgs e)
+    {
+        ResetInvocationsForTests++;
         RunSafely(RestoreBaseline, isReset: true);
+    }
 
     private void Next_Click(object sender, RoutedEventArgs e) =>
         RunSafely(() => _presenter.NextPlayer());

@@ -1,0 +1,46 @@
+name: F30.2 offline WPF lifecycle
+on:
+  push:
+    paths:
+      - "tests/FMRTE2008.OfflineLifecycle.Windows/**"
+      - "src/FMRTE2008.Desktop/OfflineTestAccess.cs"
+      - "src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml.cs"
+      - ".github/workflows/f30-2-offline-wpf-lifecycle.yml"
+  pull_request:
+    paths:
+      - "tests/FMRTE2008.OfflineLifecycle.Windows/**"
+      - "src/FMRTE2008.Desktop/OfflineTestAccess.cs"
+      - "src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml.cs"
+      - ".github/workflows/f30-2-offline-wpf-lifecycle.yml"
+permissions:
+  contents: read
+jobs:
+  f30-2-wpf-lifecycle:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build synthetic lifecycle test and Desktop
+        run: dotnet build -c Release tests/FMRTE2008.OfflineLifecycle.Windows/FMRTE2008.OfflineLifecycle.Windows.csproj
+      - name: Create-close WPF windows and check collectible references in STA
+        run: dotnet run -c Release --no-build --project tests/FMRTE2008.OfflineLifecycle.Windows/FMRTE2008.OfflineLifecycle.Windows.csproj
+      - name: Reject process, native-memory and save writes in F30.2 sources
+        shell: pwsh
+        run: |
+          $paths = @(
+            'tests/FMRTE2008.OfflineLifecycle.Windows/Program.cs',
+            'src/FMRTE2008.Desktop/OfflineTestAccess.cs'
+          )
+          $forbidden = 'ReadProcessMemory|WriteProcessMemory|OpenProcess\s*\(|Process\.GetProcess|DllImport|LoadLibrary|File\.WriteAllBytes|File\.WriteAllText|Process\.Start\s*\('
+          $source = Get-Content $paths[0] -Raw
+          if (($source + [Environment]::NewLine + 'ReadProcessMemory') -notmatch $forbidden) {
+            throw 'Negative guard mutation not detected'
+          }
+          foreach ($path in $paths) {
+            if ((Get-Content $path -Raw) -match $forbidden) {
+              throw "Forbidden operation in F30.2: $path"
+            }
+          }
