@@ -17,6 +17,10 @@
       "risks": [
         "RA-01",
         "RA-06"
+      ],
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
       ]
     },
     {
@@ -25,6 +29,10 @@
       "gap": "Registrar base por instância; realocação real não observada, sem forçar cenário",
       "risks": [
         "RA-01"
+      ],
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
       ]
     },
     {
@@ -34,6 +42,10 @@
       "risks": [
         "RA-02",
         "RA-03"
+      ],
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
       ]
     },
     {
@@ -42,6 +54,12 @@
       "gap": "9/9 pares em amostras distribuídas de dois saves segundo conferência declarada; confirmar nome comum e proveniência",
       "risks": [
         "RA-05"
+      ],
+      "sourceIds": [
+        "MATRIX",
+        "RISKS",
+        "SECOND_SAVE",
+        "PROTOCOL"
       ]
     },
     {
@@ -50,6 +68,10 @@
       "gap": "Falhas adversas de ponteiros e strings simuladas; TOCTOU real não demonstrado",
       "risks": [
         "RA-04"
+      ],
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
       ]
     },
     {
@@ -58,6 +80,10 @@
       "gap": "Invariante best-effort; ABA e alteração in-place não eliminados",
       "risks": [
         "RA-03"
+      ],
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
       ]
     },
     {
@@ -67,6 +93,11 @@
       "risks": [
         "RA-02",
         "RA-06"
+      ],
+      "sourceIds": [
+        "MATRIX",
+        "RISKS",
+        "AUDIT"
       ]
     },
     {
@@ -76,6 +107,10 @@
       "risks": [
         "RA-02",
         "RA-03"
+      ],
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
       ]
     },
     {
@@ -84,6 +119,10 @@
       "gap": "UI offline e política somente leitura; nenhuma conexão operacional",
       "risks": [
         "RA-08"
+      ],
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
       ]
     },
     {
@@ -92,6 +131,12 @@
       "gap": "Nove índices distribuídos em ambos os saves com conferência declarada; não extrapolar para tabela inteira",
       "risks": [
         "RA-05"
+      ],
+      "sourceIds": [
+        "MATRIX",
+        "RISKS",
+        "SECOND_SAVE",
+        "PROTOCOL"
       ]
     },
     {
@@ -100,6 +145,10 @@
       "gap": "Hash/variante identificados; ensaios negativos de compatibilidade e corrida pendentes",
       "risks": [
         "RA-06"
+      ],
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
       ]
     },
     {
@@ -115,6 +164,11 @@
         "RA-06",
         "RA-07",
         "RA-08"
+      ],
+      "sourceIds": [
+        "MATRIX",
+        "RISKS",
+        "PROTOCOL"
       ]
     }
   ],
@@ -124,56 +178,88 @@
       "description": "Base/módulo incorreto; identidade do processo",
       "status": "NO_ACCEPTANCE",
       "acceptedBy": null,
-      "acceptedAt": null
+      "acceptedAt": null,
+      "sourceIds": [
+        "MATRIX",
+        "RISKS"
+      ]
     },
     {
       "id": "RA-02",
       "description": "Ponteiros e índices transitórios entre saves/sessões",
       "status": "NO_ACCEPTANCE",
       "acceptedBy": null,
-      "acceptedAt": null
+      "acceptedAt": null,
+      "sourceIds": [
+        "MATRIX",
+        "RISKS"
+      ]
     },
     {
       "id": "RA-03",
       "description": "Leituras rasgadas e efeito ABA",
       "status": "NO_ACCEPTANCE",
       "acceptedBy": null,
-      "acceptedAt": null
+      "acceptedAt": null,
+      "sourceIds": [
+        "MATRIX",
+        "RISKS"
+      ]
     },
     {
       "id": "RA-04",
       "description": "Ponteiros, strings e leituras parciais",
       "status": "NO_ACCEPTANCE",
       "acceptedBy": null,
-      "acceptedAt": null
+      "acceptedAt": null,
+      "sourceIds": [
+        "MATRIX",
+        "RISKS"
+      ]
     },
     {
       "id": "RA-05",
       "description": "Identificação incorreta fora da amostra",
       "status": "NO_ACCEPTANCE",
       "acceptedBy": null,
-      "acceptedAt": null
+      "acceptedAt": null,
+      "sourceIds": [
+        "MATRIX",
+        "RISKS"
+      ]
     },
     {
       "id": "RA-06",
       "description": "Mudança de build/processo/módulo",
       "status": "NO_ACCEPTANCE",
       "acceptedBy": null,
-      "acceptedAt": null
+      "acceptedAt": null,
+      "sourceIds": [
+        "MATRIX",
+        "RISKS"
+      ]
     },
     {
       "id": "RA-07",
       "description": "Extrapolação indevida dos offsets legados",
       "status": "NO_ACCEPTANCE",
       "acceptedBy": null,
-      "acceptedAt": null
+      "acceptedAt": null,
+      "sourceIds": [
+        "MATRIX",
+        "RISKS"
+      ]
     },
     {
       "id": "RA-08",
       "description": "Escrita acidental/permissão excessiva",
       "status": "NO_ACCEPTANCE",
       "acceptedBy": null,
-      "acceptedAt": null
+      "acceptedAt": null,
+      "sourceIds": [
+        "MATRIX",
+        "RISKS"
+      ]
     }
   ],
   "observations": [
@@ -181,7 +267,8 @@
     "Sem observação real de realocação de ModuleBase; simulação não substitui comprovação.",
     "Interrupção de leitura real, atomicidade e ABA não comprovadas; não induzir falhas em fm.exe.",
     "Amostragem não comprova integridade de toda a tabela ou de atributos adicionais.",
-    "Evidências de CI e PR não equivalem a decisão humana ou autenticação independente de coletas."
+    "Evidências de CI e PR não equivalem a decisão humana ou autenticação independente de coletas.",
+    "Os hashes Git blob das fontes fixadas demonstram identidade de arquivos do commit, não autenticam externamente os relatos observacionais."
   ],
   "wpfReadiness": {
     "mode": "OFFLINE_ONLY",
@@ -214,5 +301,32 @@
     "ciIsHumanApproval": false,
     "prReviewIsHumanApproval": false
   },
-  "nextGate": "INDEPENDENT_EVIDENCE_AND_HUMAN_REVIEW_PENDING"
+  "nextGate": "INDEPENDENT_EVIDENCE_AND_HUMAN_REVIEW_PENDING",
+  "sources": [
+    {
+      "id": "MATRIX",
+      "path": "research/builds/fm2008-8.0.2v1-minimal-map-approval-matrix.md",
+      "gitBlobSha1": "b29d4e21d97209a52fc009ab3d4eac03b4956f49"
+    },
+    {
+      "id": "RISKS",
+      "path": "research/builds/fm2008-8.0.2v1-residual-risk-review-after-r07.md",
+      "gitBlobSha1": "071368d325fc9770a6c436eb67bf520bd5344207"
+    },
+    {
+      "id": "AUDIT",
+      "path": "research/builds/fm2008-8.0.2v1-a01-a12-code-audit-2026-11-19.md",
+      "gitBlobSha1": "59e0513a23272ed8e569043edcee762b1b4ad06f"
+    },
+    {
+      "id": "SECOND_SAVE",
+      "path": "research/builds/fm2008-8.0.2v1-second-save-distributed-r07.md",
+      "gitBlobSha1": "9489499c3e91d4c7b7ad2099c6e1c2425249dcfd"
+    },
+    {
+      "id": "PROTOCOL",
+      "path": "research/builds/fm2008-8.0.2v1-independent-verification-protocol.md",
+      "gitBlobSha1": "96b5504062384229f631ffefabcd9e8e8f22cff8"
+    }
+  ]
 }
