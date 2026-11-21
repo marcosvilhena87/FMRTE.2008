@@ -6,7 +6,7 @@ Base `main@923fb99cea1b37526a78124dd8fb54f237160346` após a validação pós-me
 
 ## Protocolo
 
-- Executa **48 ciclos sequenciais** no mesmo STA/Dispatcher, sem desligá-lo entre janelas.
+- Antes da medição, abre e fecha duas janelas fictícias de aquecimento para separar a inicialização única do WPF da retenção recorrente. Executa **48 ciclos sequenciais medidos** no mesmo STA/Dispatcher, sem desligá-lo entre janelas.
 - Chama `Show()` e exige `IsVisible`, `IsLoaded` e um `HwndSource` com `Handle != IntPtr.Zero` para comprovar a criação de janela nativa no contexto de CI Windows; `Close()` deve disparar exatamente uma vez `Closing` e `Closed`.
 - Três sequências rotativas: busca sem resultado e reset; navegação/recuperação após erro; fechamento durante falha persistente de reset. Alterna perfis básicos e adversariais (3/6).
 - Verifica um incremento exato do handler `Reset_Click` por clique, identidade fictícia e nenhuma reativação após callback enfileirado depois do fechamento.
@@ -21,3 +21,7 @@ Base `main@923fb99cea1b37526a78124dd8fb54f237160346` após a validação pós-me
 ## Segurança e governança
 
 Permanece `NoApprovedPlayerMaps`, `approved=false`, `operational=false`, `approvedPlayerMaps=0`, `B03=PENDING-DECLARED`, `A12=GATE-BLOQUEADO`, `decision=NOT_MADE`, RA-01–RA-08 sem aceite. `FM2008.mapping` não pode ser alterado. CI e revisão de software não são aprovação humana de evidências históricas. PR **Draft** até todos os checks e revisão técnica independente; não fazer merge nesta fase.
+
+## Achado inicial e correção de protocolo
+
+A primeira execução Windows sem aquecimento encontrou +178 handles após oito janelas em relação ao início do processo, excedendo +128. Como a primeira exibição do WPF ativa recursos de inicialização, adicionou-se aquecimento determinístico de duas janelas e coleta/Dispatcher antes da linha de base. **O limite de +128 pico / +64 final foi preservado**, não relaxado. A validade da medição depende dos checks posteriores.
