@@ -14,7 +14,7 @@ public partial class OfflineWorkspaceWindow : Window
     public OfflineWorkspaceWindow()
     {
         InitializeComponent();
-        Render(_presenter.Current());
+        Render(_presenter.Search(""));
     }
 
     private void Search_Click(object sender, RoutedEventArgs e) =>
