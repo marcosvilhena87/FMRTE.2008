@@ -21,3 +21,11 @@
 
 ## Bloqueios permanentes
 `NoApprovedPlayerMaps`, `approved=false`, `operational=false`, `approvedPlayerMaps=0`, `B03=PENDING-DECLARED`, `A12=GATE-BLOQUEADO`, `decision=NOT_MADE`, oito riscos RA-01–RA-08 sem aceite. Nenhum mapa operacional, processo real, memória ou escrita.
+
+## F27-R — Correções da revisão independente (#6006193251)
+- **R01:** `Passe` é classificado sempre como `Technical`, inclusive no jogador `DEMO-003`. Todos os nove nomes conhecidos são resolvidos por `OfflineAttributeCategoryCatalog.Resolve`; nenhuma categoria é indexada pela posição do atributo.
+- **R02:** `OfflineAttributeCategoryCatalog.Categorize` cria uma lista somente leitura preservando a ordem observada das fixtures e rejeita nomes desconhecidos, valores nulos, lista vazia, excesso de itens e nomes duplicados. `OfflineExpandedPlayer` valida independentemente a categoria de cada nome, impedindo que um consumidor monte pares trocados com contagens e nomes válidos.
+- Os testes adversariais cobrem consistência entre jogadores, reordenação do vetor original, rejeição de classificação alterada, nomes não catalogados, alterações de caixa/espaços e mutações da lista publicada.
+- O workflow F27 inclui o novo catálogo nos filtros idênticos de `push` e `pull_request` e na inspeção estática de uso de APIs de processos.
+- Essas classificações são **convenções fictícias de interface**, sem qualquer alegação sobre dados ou símbolos históricos de FMRTE/FM2008.
+- A conclusão requer CI do novo HEAD e revisão posterior; não fazer merge nesta correção.
