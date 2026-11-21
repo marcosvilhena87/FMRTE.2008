@@ -4,6 +4,24 @@ ROOT=pathlib.Path(__file__).resolve().parents[2]
 MATRIX=ROOT/"tests/FMRTE2008.MemorySimulation/F25FunctionalReconstructionMatrix.json"
 TARGETS={"Domain":"src/FMRTE2008.Domain/","Application":"src/FMRTE2008.Application/",
 "Desktop":"src/FMRTE2008.Desktop/","Infrastructure.Windows":"src/FMRTE2008.Infrastructure.Windows/"}
+CANONICAL_TYPES={
+  "0x02000008": "FMRTE.frmMain",
+  "0x02000005": "FM_Editor.frmOptions",
+  "0x0200002f": "FMRTE.GameClasses.Player",
+  "0x02000032": "FMRTE.GameClasses.PlayerAttributes",
+  "0x02000014": "FMRTE.GameClasses.Contract",
+  "0x02000012": "FMRTE.GameClasses.League",
+  "0x02000030": "FMRTE.GameClasses.Players",
+  "0x0200003c": "FMRTE.GameClasses.PlayersList",
+  "0x02000017": "FM_Editor.UserControls.playersPositions",
+  "0x02000042": "FM_Editor.UserControls.playersAttributes",
+  "0x0200000d": "FMRTE.UserControls.leagueStandings",
+  "0x0200000f": "FM_Editor.UserControls.contractsInformation",
+  "0x0200002e": "FMRTE.GameClasses.PlayerInfo",
+  "0x02000037": "FMRTE.GameClasses.ClubFinances",
+  "0x02000038": "FMRTE.GameClasses.Club",
+  "0x0200001f": "FMRTE.GameClasses.Nation"
+}
 class InvalidMatrix(ValueError): pass
 def require(ok,why):
     if not ok:raise InvalidMatrix(why)
@@ -19,7 +37,7 @@ def verify(doc):
     require(set(arch)=={"modules","infrastructureRule","functionalityEquivalenceVerified"},"arch keys")
     require(set(arch["modules"])==set(TARGETS) and arch["functionalityEquivalenceVerified"] is False,"architecture separation")
     require("No approved player maps" in arch["infrastructureRule"],"infrastructure guard")
-    require(len(doc["rows"])==16,"fixed audited candidate set")
+    require(len(doc["rows"])==len(CANONICAL_TYPES),"fixed audited candidate set")
     ids=set();tokens=set()
     for row in doc["rows"]:
         require(set(row)=={"id","historicalToken","historicalFullName","targetModule","targetFile",
@@ -28,6 +46,7 @@ def verify(doc):
         ids.add(row["id"])
         require(row["historicalToken"].startswith("0x020000") and row["historicalToken"] not in tokens,"TypeDef token")
         tokens.add(row["historicalToken"])
+        require(CANONICAL_TYPES.get(row["historicalToken"])==row["historicalFullName"],"historical token/name mismatch")
         require(row["targetModule"] in TARGETS,"unknown module")
         require(row["targetFile"].startswith(TARGETS[row["targetModule"]]) and
                 (ROOT/row["targetFile"]).is_file(),"invalid target")
@@ -35,6 +54,7 @@ def verify(doc):
         require(row["deliveryStatus"] in ("PROPOSED","OFFLINE_ONLY"),"unapproved delivery")
         require(row["operational"] is False and row["approved"] is False,"operational promotion")
         require(row["historicalFullName"] and len(row["rationale"])>15,"missing evidence/rationale")
+    require(tokens==set(CANONICAL_TYPES),"missing canonical types")
     runtime=doc["excludedRuntime"]
     require(set(runtime)=={"module","reason","operational"} and
             runtime["module"]=="Infrastructure.Windows" and runtime["operational"] is False,"runtime exclusion")
@@ -68,5 +88,6 @@ class MatrixTests(unittest.TestCase):
     def test_unapproved_delivery(self):self.reject(lambda d:d["rows"][0].update(deliveryStatus="LIVE"))
     def test_unapproved_row(self):self.reject(lambda d:d["rows"][0].update(approved=True))
     def test_new_field(self):self.reject(lambda d:d["rows"][0].update(memoryOffset=1234))
+    def test_token_name_swap(self):self.reject(lambda d:d["rows"][0].update(historicalFullName="FMRTE.GameClasses.Player"))
     def test_missing_provenance(self):self.reject(lambda d:d["rows"][0].update(rationale=""))
 if __name__=="__main__":unittest.main(verbosity=2)
