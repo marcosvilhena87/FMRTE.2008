@@ -18,6 +18,9 @@
       <TextBlock FontSize="25" FontWeight="SemiBold" Text="FMRTE2008"/>
       <TextBlock Margin="0,5,0,12" TextWrapping="Wrap"
                  Text="Consulta de jogadores — somente leitura; dados demonstrativos, sem conexão com o jogo."/>
+      <Button Content="Abrir perfis fictícios F26 (offline)" Click="OpenOfflineProfiles_Click"
+              HorizontalAlignment="Left" Padding="12,6" Margin="0,0,0,10"
+              ToolTip="Apenas dados inventados, sem acesso ao Football Manager."/>
     </StackPanel>
     <Border Grid.Row="1" Background="#FFF1F5F9" Padding="12" CornerRadius="5">
       <StackPanel>

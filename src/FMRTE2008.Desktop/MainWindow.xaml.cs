@@ -126,6 +126,9 @@ public partial class MainWindow : Window
         RefreshPage();
     }
 
+    private void OpenOfflineProfiles_Click(object sender, RoutedEventArgs e) =>
+        new OfflineProfilesWindow { Owner = this }.ShowDialog();
+
     private void SelectExeButton_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog
