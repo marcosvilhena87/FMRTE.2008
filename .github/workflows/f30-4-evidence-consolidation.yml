@@ -1,0 +1,99 @@
+name: F30.4 offline consolidated evidence
+on:
+  push:
+    paths:
+      - "evidence/f30/**"
+      - "tools/f30/**"
+      - "docs/F30_4_*.md"
+      - ".github/workflows/f30-4-evidence-consolidation.yml"
+      - "tests/FMRTE2008.OfflineRobustness.Windows/F30Stress.cs"
+      - "tests/FMRTE2008.OfflineLifecycle.Windows/Program.cs"
+      - "tests/FMRTE2008.OfflineNativeWindows/Program.cs"
+      - "docs/F30_1_OFFLINE_WPF_STRESS.md"
+      - "docs/F30_2_WPF_LIFECYCLE.md"
+      - "docs/F30_3_VISIBLE_WPF_RESOURCES.md"
+      - ".github/workflows/f29-offline-robustness.yml"
+      - ".github/workflows/f30-2-offline-wpf-lifecycle.yml"
+      - ".github/workflows/f30-3-offline-native-wpf.yml"
+  pull_request:
+    paths:
+      - "evidence/f30/**"
+      - "tools/f30/**"
+      - "docs/F30_4_*.md"
+      - ".github/workflows/f30-4-evidence-consolidation.yml"
+      - "tests/FMRTE2008.OfflineRobustness.Windows/F30Stress.cs"
+      - "tests/FMRTE2008.OfflineLifecycle.Windows/Program.cs"
+      - "tests/FMRTE2008.OfflineNativeWindows/Program.cs"
+      - "docs/F30_1_OFFLINE_WPF_STRESS.md"
+      - "docs/F30_2_WPF_LIFECYCLE.md"
+      - "docs/F30_3_VISIBLE_WPF_RESOURCES.md"
+      - ".github/workflows/f29-offline-robustness.yml"
+      - ".github/workflows/f30-2-offline-wpf-lifecycle.yml"
+      - ".github/workflows/f30-3-offline-native-wpf.yml"
+permissions:
+  contents: read
+jobs:
+  f30-4-offline-evidence:
+    name: f30-4-offline-evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      F30_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify pinned evidence files and fail-closed negative mutations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/f30/validate_f30_evidence.py \
+            --manifest evidence/f30/f30_consolidated_manifest.json \
+            --self-test --report "$RUNNER_TEMP/f30-verification.json"
+      - name: Verify deterministic report byte-for-byte
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/f30/validate_f30_evidence.py \
+            --manifest evidence/f30/f30_consolidated_manifest.json \
+            --self-test --report "$RUNNER_TEMP/f30-verification-repeat.json"
+          cmp "$RUNNER_TEMP/f30-verification.json" "$RUNNER_TEMP/f30-verification-repeat.json"
+          sha256sum "$RUNNER_TEMP/f30-verification.json"
+          python3 - "$RUNNER_TEMP/f30-verification.json" <<'PY'
+          import json, sys
+          d = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert d["result"] == "PASS"
+          assert d["human_approval"] is None and d["decision"] == "NOT_MADE"
+          assert d["approved"] is False and d["operational"] is False
+          assert d["offline_historical_log_authentication"] is False
+          assert d["negative_cases_passed"] == 46
+          assert len(d["negative_cases"]) == 46
+          assert len({case["case"] for case in d["negative_cases"]}) == 46
+          assert all(case["result"] == "REJECTED" for case in d["negative_cases"])
+          assert d["approval_state"] == "NoApprovedPlayerMaps"
+          assert d["approvedPlayerMaps"] == 0
+          assert d["B03"] == "PENDING-DECLARED" and d["A12"] == "GATE-BLOQUEADO"
+          assert set(d["risk_acceptances"]) == {f"RA-{i:02d}" for i in range(1,9)}
+          assert all(value is None for value in d["risk_acceptances"].values())
+          assert d["human_reviewer"] is None
+          assert d["human_review_timestamp"] is None
+          assert d["human_authority"] is None
+          import os, subprocess
+          e = d["execution"]
+          assert e["historicEvidenceCommit"] == d["evidence_checkout_commit"]
+          assert e["executionCheckoutSha"] == subprocess.check_output(
+              ["git", "rev-parse", "HEAD"], text=True).strip()
+          assert e["runnerEventSha"] == os.environ["GITHUB_SHA"]
+          assert e["prHeadSha"] == os.environ["F30_PR_HEAD_SHA"]
+          assert e["workflowRunId"] == int(os.environ["GITHUB_RUN_ID"])
+          assert e["workflowAttempt"] == int(os.environ["GITHUB_RUN_ATTEMPT"])
+          assert e["event"] == os.environ["GITHUB_EVENT_NAME"]
+          assert e["historicalCiReauthenticated"] is False
+          assert len(d["sources"]) == 9
+          assert all(len(s["sha256"]) == 64 for s in d["sources"])
+          PY
+      - name: Upload deterministic machine-readable SHA-256 report
+        uses: actions/upload-artifact@v4
+        with:
+          name: f30-offline-evidence-${{ github.run_id }}-a${{ github.run_attempt }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/f30-verification.json
+          if-no-files-found: error
+          retention-days: 30
