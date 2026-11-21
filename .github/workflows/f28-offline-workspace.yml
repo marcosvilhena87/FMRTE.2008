@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - "src/FMRTE2008.Application/OfflineWorkspacePresenter.cs"
+      - "src/FMRTE2008.Application/OfflineRosterPresenter.cs"
       - "src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml"
       - "src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml.cs"
       - "src/FMRTE2008.Desktop/MainWindow.xaml"
@@ -13,6 +14,7 @@ on:
   pull_request:
     paths:
       - "src/FMRTE2008.Application/OfflineWorkspacePresenter.cs"
+      - "src/FMRTE2008.Application/OfflineRosterPresenter.cs"
       - "src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml"
       - "src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml.cs"
       - "src/FMRTE2008.Desktop/MainWindow.xaml"
@@ -46,7 +48,7 @@ jobs:
       - name: Reject native process/write APIs in new F28 code
         shell: pwsh
         run: |
-          $paths = @('src/FMRTE2008.Application/OfflineWorkspacePresenter.cs','src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml.cs')
+          $paths = @('src/FMRTE2008.Application/OfflineWorkspacePresenter.cs','src/FMRTE2008.Application/OfflineRosterPresenter.cs','src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml.cs')
           foreach ($path in $paths) {
             $source = Get-Content -Raw $path
             if ($source -match 'OpenProcess\s*\(|ReadProcessMemory|WriteProcessMemory|Process\.GetProcess|DllImport|LoadLibrary|File\.WriteAllBytes|File\.WriteAllText') {
