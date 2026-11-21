@@ -8,17 +8,35 @@ namespace FMRTE2008.Desktop;
 /// <summary>All displayed information originates from closed, invented F28 fixtures.</summary>
 public partial class OfflineWorkspaceWindow : Window
 {
-    private readonly OfflineWorkspacePresenter _presenter = new();
+    private readonly OfflineWorkspacePresenter _presenter;
     private bool _rendering;
 
-    public OfflineWorkspaceWindow()
+    public OfflineWorkspaceWindow() : this(OfflineRosterScenario.Baseline) { }
+
+    internal OfflineWorkspaceWindow(OfflineRosterScenario scenario)
     {
+        _presenter = new OfflineWorkspacePresenter(scenario);
         InitializeComponent();
-        Render(_presenter.Search(""));
+        Render(_presenter.Current());
     }
 
+    private void RunSafely(Func<OfflineWorkspaceState> action)
+    {
+        try { Render(action()); }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            // Reset only the invented in-memory view. No game access or file recovery.
+            QueryBox.Clear();
+            RunSafely(() => _presenter.Search(""));
+            StatusText.Text = "Falha na demonstração recuperada; filtro e seleção reiniciados.";
+        }
+    }
+
+    internal void SimulateRecoverableFailureForTests() =>
+        RunSafely(() => throw new InvalidOperationException("Falha sintética de teste."));
+
     private void Search_Click(object sender, RoutedEventArgs e) =>
-        Render(_presenter.Search(QueryBox.Text));
+        RunSafely(() => _presenter.Search(QueryBox.Text));
 
     private void Reset_Click(object sender, RoutedEventArgs e)
     {
@@ -27,25 +45,27 @@ public partial class OfflineWorkspaceWindow : Window
     }
 
     private void Next_Click(object sender, RoutedEventArgs e) =>
-        Render(_presenter.NextPlayer());
+        RunSafely(() => _presenter.NextPlayer());
 
     private void Previous_Click(object sender, RoutedEventArgs e) =>
-        Render(_presenter.PreviousPlayer());
+        RunSafely(() => _presenter.PreviousPlayer());
 
     private void Club_Click(object sender, RoutedEventArgs e)
     {
-        var clubId = _presenter.Current().SelectedClub?.DemonstrationId;
-        var view = _presenter.ShowClub(clubId);
-        // The visible query reflects the exact-ID club filter, so re-searching it
-        // preserves the same club even if future fixtures share similar names.
-        QueryBox.Text = view.SelectedClub?.DemonstrationId ?? "";
-        Render(view);
+        RunSafely(() =>
+        {
+            var clubId = _presenter.Current().SelectedClub?.DemonstrationId;
+            var view = _presenter.ShowClub(clubId);
+            // Only the invented ID is shown: no process, file path or external input.
+            QueryBox.Text = view.SelectedClub?.DemonstrationId ?? "";
+            return view;
+        });
     }
 
     private void PlayersGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_rendering) return;
-        Render(_presenter.SelectPlayer(
+        RunSafely(() => _presenter.SelectPlayer(
             (PlayersGrid.SelectedItem as OfflineExpandedPlayer)?.Profile.DemonstrationId));
     }
 
