@@ -17,23 +17,14 @@ public sealed class OfflineExpandedRoster
             new OfflineClub("CLUB-002","Clube Exemplo B","Cidade Inventada B","País Fictício"),
             new OfflineClub("CLUB-003","Clube Exemplo C","Cidade Inventada C","País Fictício")
         };
-        var groups = new[]
-        {
-            new[] { OfflineAttributeCategory.Technical, OfflineAttributeCategory.Mental,
-                    OfflineAttributeCategory.Physical, OfflineAttributeCategory.Technical },
-            new[] { OfflineAttributeCategory.Technical, OfflineAttributeCategory.Technical,
-                    OfflineAttributeCategory.Physical, OfflineAttributeCategory.Technical },
-            new[] { OfflineAttributeCategory.Technical, OfflineAttributeCategory.Physical,
-                    OfflineAttributeCategory.Technical, OfflineAttributeCategory.Mental }
-        };
         var players = new OfflineExpandedPlayer[baseProfiles.Count];
         for (var i = 0; i < players.Length; i++)
         {
             var profile = baseProfiles[i];
-            if (!profile.IsSynthetic || groups[i].Length != profile.Attributes.Count)
+            if (!profile.IsSynthetic)
                 throw new InvalidOperationException("Invalid fixture grouping.");
             players[i] = new OfflineExpandedPlayer(profile,clubs[i],
-                profile.Attributes.Select((a,index) => new OfflineCategorizedAttribute(a,groups[i][index])));
+                OfflineAttributeCategoryCatalog.Categorize(profile.Attributes));
         }
         _players = Array.AsReadOnly(players);
     }
