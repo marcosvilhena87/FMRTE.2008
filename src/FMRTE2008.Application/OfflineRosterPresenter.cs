@@ -54,7 +54,18 @@ public sealed class OfflineRosterPresenter
             p.Profile.DisplayName.Contains(query,StringComparison.OrdinalIgnoreCase) ||
             p.Profile.DemonstrationId.Contains(query,StringComparison.OrdinalIgnoreCase) ||
             p.Profile.Position.Contains(query,StringComparison.OrdinalIgnoreCase) ||
-            p.Club.Name.Contains(query,StringComparison.OrdinalIgnoreCase)).ToArray());
+            p.Club.Name.Contains(query,StringComparison.OrdinalIgnoreCase) ||
+            p.Club.DemonstrationId.Contains(query,StringComparison.OrdinalIgnoreCase)).ToArray());
+        _index = _visible.Count > 0 ? 0 : -1;
+        return Current();
+    }
+
+    /// <summary>Closed exact-ID club filtering, independent of other searchable text.</summary>
+    public OfflineRosterState FilterByClubId(string clubId)
+    {
+        ArgumentNullException.ThrowIfNull(clubId);
+        _visible = Array.AsReadOnly(_all.Where(p =>
+            string.Equals(p.Club.DemonstrationId, clubId, StringComparison.Ordinal)).ToArray());
         _index = _visible.Count > 0 ? 0 : -1;
         return Current();
     }
