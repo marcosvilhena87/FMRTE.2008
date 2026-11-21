@@ -30,12 +30,30 @@ jobs:
         run: |
           $path = 'tests/FMRTE2008.OfflineNativeWindows/Program.cs'
           $source = Get-Content $path -Raw
-          $forbidden = 'ReadProcessMemory|WriteProcessMemory|OpenProcess\s*\(|Process\.GetProcessById|Process\.GetProcesses|DllImport|LibraryImport|LoadLibrary|File\.WriteAllBytes|File\.WriteAllText|Process\.Start\s*\('
+          $forbidden = 'ReadProcessMemory|WriteProcessMemory|OpenProcess\s*\(|Process\.GetProcessById|Process\.GetProcesses|LibraryImport|LoadLibrary|File\.WriteAllBytes|File\.WriteAllText|Process\.Start\s*\('
           if (($source + [Environment]::NewLine + 'ReadProcessMemory') -notmatch $forbidden) {
             throw 'F30.3 negative mutation not detected'
           }
           if ($source -match $forbidden) {
             throw 'Forbidden cross-process or save API in F30.3'
+          }
+          # Exactly two explicitly reviewed user32 functions. Any additional
+          # DLL import, including another user32 API, rejects the build.
+          $imports = [regex]::Matches($source, '\[DllImport\("([^"]+)"')
+          if ($imports.Count -ne 2) { throw 'Only two approved user32 imports allowed' }
+          foreach ($import in $imports) {
+            if ($import.Groups[1].Value -ne 'user32.dll') {
+              throw 'Unauthorized native library in F30.3'
+            }
+          }
+          if ($source -notmatch 'extern uint GetGuiResources\(' -or
+              $source -notmatch 'extern bool IsWindow\(') {
+            throw 'Approved native method signatures changed'
+          }
+          # Negative mutation: append unapproved import in-memory.
+          $mutated = $source + [Environment]::NewLine + '[DllImport("kernel32.dll")]'
+          if (([regex]::Matches($mutated, '\[DllImport\("([^"]+)"')).Count -ne 3) {
+            throw 'Native import mutation bypassed the guard'
           }
           if ($source -notmatch 'Process\.GetCurrentProcess') {
             throw 'F30.3 native budget not scoped to the own test process'
