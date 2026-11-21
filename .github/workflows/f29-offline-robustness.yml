@@ -1,0 +1,62 @@
+name: F29 offline robustness
+on:
+  push:
+    paths:
+      - "src/FMRTE2008.Application/OfflineCollisionFixtures.cs"
+      - "src/FMRTE2008.Application/OfflineTestAccess.cs"
+      - "src/FMRTE2008.Application/OfflineRosterPresenter.cs"
+      - "src/FMRTE2008.Application/OfflineWorkspacePresenter.cs"
+      - "src/FMRTE2008.Desktop/OfflineTestAccess.cs"
+      - "src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml.cs"
+      - "tests/FMRTE2008.OfflineRobustness/**"
+      - "tests/FMRTE2008.OfflineRobustness.Windows/**"
+      - ".github/workflows/f29-offline-robustness.yml"
+  pull_request:
+    paths:
+      - "src/FMRTE2008.Application/OfflineCollisionFixtures.cs"
+      - "src/FMRTE2008.Application/OfflineTestAccess.cs"
+      - "src/FMRTE2008.Application/OfflineRosterPresenter.cs"
+      - "src/FMRTE2008.Application/OfflineWorkspacePresenter.cs"
+      - "src/FMRTE2008.Desktop/OfflineTestAccess.cs"
+      - "src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml.cs"
+      - "tests/FMRTE2008.OfflineRobustness/**"
+      - "tests/FMRTE2008.OfflineRobustness.Windows/**"
+      - ".github/workflows/f29-offline-robustness.yml"
+permissions:
+  contents: read
+jobs:
+  f29-domain-navigation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Deterministic shared clubs, collisions and recovery
+        run: dotnet run -c Release --project tests/FMRTE2008.OfflineRobustness/FMRTE2008.OfflineRobustness.csproj
+  f29-wpf-recovery:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Compile WPF without opening historical executable
+        run: dotnet build -c Release src/FMRTE2008.Desktop/FMRTE2008.Desktop.csproj
+      - name: STA WPF collision and error-recovery smoke
+        run: dotnet run -c Release --project tests/FMRTE2008.OfflineRobustness.Windows/FMRTE2008.OfflineRobustness.Windows.csproj
+      - name: Reject native process, save and write operations in F29
+        shell: pwsh
+        run: |
+          $paths = @(
+            'src/FMRTE2008.Application/OfflineCollisionFixtures.cs',
+            'src/FMRTE2008.Application/OfflineRosterPresenter.cs',
+            'src/FMRTE2008.Application/OfflineWorkspacePresenter.cs',
+            'src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml.cs'
+          )
+          foreach ($path in $paths) {
+            $source = Get-Content $path -Raw
+            if ($source -match 'ReadProcessMemory|WriteProcessMemory|OpenProcess\s*\(|Process\.GetProcess|DllImport|LoadLibrary|File\.WriteAllBytes|File\.WriteAllText|Process\.Start\s*\(') {
+              throw "Disallowed operation in F29: $path"
+            }
+          }
