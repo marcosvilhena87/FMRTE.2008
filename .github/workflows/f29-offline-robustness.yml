@@ -52,11 +52,19 @@ jobs:
             'src/FMRTE2008.Application/OfflineCollisionFixtures.cs',
             'src/FMRTE2008.Application/OfflineRosterPresenter.cs',
             'src/FMRTE2008.Application/OfflineWorkspacePresenter.cs',
-            'src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml.cs'
+            'src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml.cs',
+            'tests/FMRTE2008.OfflineRobustness.Windows/F30Stress.cs'
           )
+          $f30 = 'tests/FMRTE2008.OfflineRobustness.Windows/F30Stress.cs'
+          if ($paths -notcontains $f30) { throw 'F30 source absent from guard' }
+          $forbidden = 'ReadProcessMemory|WriteProcessMemory|OpenProcess\s*\(|Process\.GetProcess|DllImport|LoadLibrary|File\.WriteAllBytes|File\.WriteAllText|Process\.Start\s*\('
+          # Negative mutation: in-memory only. A forbidden call appended to the
+          # F30 file must be recognized without writing to the workspace.
+          $mutated = (Get-Content $f30 -Raw) + [Environment]::NewLine + 'ReadProcessMemory'
+          if ($mutated -notmatch $forbidden) { throw 'F30 mutation bypassed the guard' }
           foreach ($path in $paths) {
             $source = Get-Content $path -Raw
-            if ($source -match 'ReadProcessMemory|WriteProcessMemory|OpenProcess\s*\(|Process\.GetProcess|DllImport|LoadLibrary|File\.WriteAllBytes|File\.WriteAllText|Process\.Start\s*\(') {
+            if ($source -match $forbidden) {
               throw "Disallowed operation in F29: $path"
             }
           }

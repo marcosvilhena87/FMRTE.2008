@@ -119,6 +119,7 @@ static class F29Windows
             Click("ResetButton");
             Check(grid.Items.Count==6, "recovery after one failed automatic attempt");
 
+            F30Stress.Run(w);
             Console.WriteLine($"F29 WPF PASS: {passed} in-process STA collision and failure recovery assertions");
         }
         finally { w.Close(); }
