@@ -1,0 +1,52 @@
+name: F26 offline functional reconstruction
+on:
+  push:
+    paths:
+      - "src/FMRTE2008.Domain/OfflinePlayerProfile.cs"
+      - "src/FMRTE2008.Application/OfflineProfileQueryService.cs"
+      - "src/FMRTE2008.Desktop/OfflineProfilesWindow.xaml"
+      - "src/FMRTE2008.Desktop/OfflineProfilesWindow.xaml.cs"
+      - "src/FMRTE2008.Desktop/MainWindow.xaml"
+      - "src/FMRTE2008.Desktop/MainWindow.xaml.cs"
+      - "tests/FMRTE2008.OfflineProfiles/**"
+      - ".github/workflows/f26-offline-profiles.yml"
+  pull_request:
+    paths:
+      - "src/FMRTE2008.Domain/OfflinePlayerProfile.cs"
+      - "src/FMRTE2008.Application/OfflineProfileQueryService.cs"
+      - "src/FMRTE2008.Desktop/OfflineProfilesWindow.xaml"
+      - "src/FMRTE2008.Desktop/OfflineProfilesWindow.xaml.cs"
+      - "src/FMRTE2008.Desktop/MainWindow.xaml"
+      - "src/FMRTE2008.Desktop/MainWindow.xaml.cs"
+      - "tests/FMRTE2008.OfflineProfiles/**"
+      - ".github/workflows/f26-offline-profiles.yml"
+permissions:
+  contents: read
+jobs:
+  f26-domain-application:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Synthetic domain and application regression tests
+        run: dotnet run --project tests/FMRTE2008.OfflineProfiles/FMRTE2008.OfflineProfiles.csproj --configuration Release
+  f26-desktop:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build WPF demonstration without running game process
+        run: dotnet build src/FMRTE2008.Desktop/FMRTE2008.Desktop.csproj --configuration Release --no-restore false
+      - name: Prevent live connection additions to F26 files
+        shell: pwsh
+        run: |
+          $paths = @('src/FMRTE2008.Domain/OfflinePlayerProfile.cs','src/FMRTE2008.Application/OfflineProfileQueryService.cs','src/FMRTE2008.Desktop/OfflineProfilesWindow.xaml.cs')
+          foreach ($path in $paths) {
+            $text = Get-Content -Raw $path
+            if ($text -match 'ReadProcessMemory|WriteProcessMemory|OpenProcess\s*\(|Process\.GetProcess|DllImport|LoadLibrary') { throw "Forbidden runtime call in $path" }
+          }
+          Write-Host "F26 new files have no native process access"
