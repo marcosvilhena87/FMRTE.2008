@@ -407,7 +407,7 @@ def negatives(base,source_root):
     mutation("source-duplicate",lambda x:x["sources"][1].update(id="MATRIX"),"source ID/duplicate")
     mutation("mapping-commit",lambda x:x["base"].update(mappingCommit="0"*40),"base provenance identity")
     mutation("extra-root",lambda x:x.update(authorized=True),"root: closed schema")
-    mutation("observation-delete",lambda x:x["observations"].pop(),"required limitation removed")
+    mutation("observation-delete",lambda x:x["observations"].__setitem__(-1,"Texto irrelevante de comprimento suficiente para manter a lista"),"required limitation removed")
     mutation("WPF-live",lambda x:x["wpfReadiness"].update(mode="LIVE"),"wpf source")
     mutation("WPF-real-source",lambda x:x["wpfReadiness"].update(dataSource="FM.EXE"),"wpf source")
     mutation("WPF-adapter",lambda x:x["wpfReadiness"].update(operationalAdapterEnabled=True),"wpf gate")
