@@ -73,6 +73,52 @@ static class F29Windows
             Check(grid.SelectedIndex==1,"navigation works after recovery");
             Click("ResetButton");
             Check(grid.Items.Count==6 && grid.SelectedIndex==0,"reset after exception");
+            // F29-R01: a failed restoration must stop without recursion, leave
+            // no stale player/contract data and allow explicit retry only.
+            w.SimulateResetFailureForTests(2);
+            Check(grid.Items.Count==0 && grid.SelectedIndex==-1 &&
+                  !Find<Button>("NextButton").IsEnabled &&
+                  !Find<Button>("SearchButton").IsEnabled &&
+                  Find<Button>("ResetButton").IsEnabled,
+                  "persistent recovery failure enters disabled safe view");
+            Check(Find<TextBlock>("ContractText").Text=="" &&
+                  Find<TextBlock>("ClubText").Text=="" &&
+                  Find<TextBlock>("WageText").Text=="" &&
+                  Find<DataGrid>("TechnicalGrid").Items.Count==0 &&
+                  Find<DataGrid>("MentalGrid").Items.Count==0 &&
+                  Find<DataGrid>("PhysicalGrid").Items.Count==0,
+                  "failed recovery leaks no previous player or contract");
+            Check(status.Text.Contains("Falha na restauração offline"),
+                  "failed recovery disclosed without exception details");
+            Click("ResetButton"); // second forced reset failure, no recursive retry
+            Check(grid.Items.Count==0 && !Find<Button>("SearchButton").IsEnabled &&
+                  Find<Button>("ResetButton").IsEnabled,
+                  "failed manual reset remains safe and does not retry internally");
+            Click("NextButton");
+            Check(grid.Items.Count==0, "disabled safe state does not navigate even on synthetic event");
+            Click("ResetButton"); // exhausted failure injection: explicit retry succeeds
+            Check(grid.Items.Count==6 && grid.SelectedIndex==0 &&
+                  Find<Button>("SearchButton").IsEnabled &&
+                  Find<Button>("NextButton").IsEnabled,
+                  "manual reset recovers from persistent failure");
+            Check(!status.Text.Contains("Falha na restauração offline"),
+                  "success clears prior failure status");
+
+            // F29-R02: the Reset_Click handler itself must be guarded.
+            w.SimulateResetClickFailureForTests();
+            Check(grid.Items.Count==0 && grid.SelectedIndex==-1 &&
+                  !Find<Button>("SearchButton").IsEnabled &&
+                  Find<Button>("ResetButton").IsEnabled,
+                  "reset handler failure enters safe view without recursive fallback");
+            Click("ResetButton");
+            Check(grid.Items.Count==6 && grid.SelectedIndex==0,
+                  "reset handler recovers after the transient fault");
+            w.SimulateResetFailureForTests(1);
+            Check(grid.Items.Count==0 && Find<Button>("ResetButton").IsEnabled,
+                  "single failed automatic reset remains safe");
+            Click("ResetButton");
+            Check(grid.Items.Count==6, "recovery after one failed automatic attempt");
+
             Console.WriteLine($"F29 WPF PASS: {passed} in-process STA collision and failure recovery assertions");
         }
         finally { w.Close(); }
