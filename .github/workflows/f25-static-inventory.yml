@@ -1,0 +1,47 @@
+name: F25 static historical inventory tests
+on:
+  push:
+    paths:
+      - "tools/f25_inventory.py"
+      - "tests/FMRTE2008.MemorySimulation/test_f25_inventory.py"
+      - "tests/FMRTE2008.MemorySimulation/F25HistoricalInventory.json"
+      - ".github/workflows/f25-static-inventory.yml"
+  pull_request:
+    paths:
+      - "tools/f25_inventory.py"
+      - "tests/FMRTE2008.MemorySimulation/test_f25_inventory.py"
+      - "tests/FMRTE2008.MemorySimulation/F25HistoricalInventory.json"
+      - ".github/workflows/f25-static-inventory.yml"
+permissions:
+  contents: read
+jobs:
+  static-inventory:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify F25.1 synthetic-only safety and integrity cases
+        run: python -m unittest discover -s tests/FMRTE2008.MemorySimulation -p test_f25_inventory.py -v
+      - name: Verify manifest is valid JSON with static blocked governance
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          p=Path("tests/FMRTE2008.MemorySimulation/F25HistoricalInventory.json")
+          m=json.loads(p.read_text(encoding="utf-8"))
+          assert m["schemaVersion"]==1
+          assert m["kind"]=="f25-static-zip-inventory"
+          assert m["artifact"]["entries"]==len(m["entries"])==27
+          assert m["artifact"]["uncompressedBytes"]==sum(e["bytes"] for e in m["entries"])==835178
+          assert m["artifact"]["sha256"]=="491f15b1255fe135dfd5983520cb1a090b8edbd14511205a6f3b576b06a9c9cd"
+          assert m["security"]=={
+            "executed":False,"extracted":False,"operational":False,"approved":False,
+            "approvedPlayerMaps":0,"humanDecision":"NOT_MADE","b03":"PENDING-DECLARED",
+            "gateA12":"GATE-BLOQUEADO","acceptedRisks":0}
+          assert len({e["path"].casefold() for e in m["entries"]})==len(m["entries"])
+          print("F25.1 checked-in documentary manifest consistent; archive bytes not bundled")
