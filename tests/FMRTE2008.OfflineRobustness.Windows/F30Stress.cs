@@ -55,8 +55,8 @@ static class F30Stress
             Check(!string.IsNullOrEmpty(contract.Text) &&
                 !string.IsNullOrEmpty(wage.Text) &&
                 technical.Items.Count == row!.AttributesFor(OfflineAttributeCategory.Technical).Count &&
-                mental.Items.Count == row.AttributesFor(OfflineAttributeCategory.Mental).Count &&
-                physical.Items.Count == row.AttributesFor(OfflineAttributeCategory.Physical).Count,
+                mental.Items.Count == row!.AttributesFor(OfflineAttributeCategory.Mental).Count &&
+                physical.Items.Count == row!.AttributesFor(OfflineAttributeCategory.Physical).Count,
                 iteration, "attribute categories match the selected fixture exactly");
         }
 
