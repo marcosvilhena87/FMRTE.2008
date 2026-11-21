@@ -1,0 +1,33 @@
+name: F25 static CLR metadata tests
+on:
+  push:
+    paths:
+      - "tools/f25_clr_metadata.py"
+      - "tests/FMRTE2008.MemorySimulation/test_f25_clr_metadata.py"
+      - ".github/workflows/f25-static-clr.yml"
+  pull_request:
+    paths:
+      - "tools/f25_clr_metadata.py"
+      - "tests/FMRTE2008.MemorySimulation/test_f25_clr_metadata.py"
+      - ".github/workflows/f25-static-clr.yml"
+permissions:
+  contents: read
+jobs:
+  static-clr:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run synthetic PE32/CLR negative and positive tests only
+        run: python -m unittest discover -s tests/FMRTE2008.MemorySimulation -p test_f25_clr_metadata.py -v
+      - name: Reject accidental historical executable inclusion
+        shell: python
+        run: |
+          from pathlib import Path
+          assert not any(p.name.lower()=="fmrte.exe" for p in Path(".").rglob("*") if p.is_file())
+          print("No historic FMRTE.exe committed or executed")
