@@ -48,7 +48,7 @@ public sealed class OfflineRosterPresenter
 
     public OfflineRosterPresenter() : this(OfflineRosterScenario.Baseline) { }
 
-    public OfflineRosterPresenter(OfflineRosterScenario scenario)
+    internal OfflineRosterPresenter(OfflineRosterScenario scenario)
     {
         _all = scenario switch
         {
