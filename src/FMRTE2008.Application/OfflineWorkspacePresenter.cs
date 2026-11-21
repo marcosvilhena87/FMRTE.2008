@@ -47,7 +47,7 @@ public sealed class OfflineWorkspacePresenter
             .FirstOrDefault(x => string.Equals(x.DemonstrationId, clubId, StringComparison.Ordinal));
         // Only current, previously visible fictional clubs may be opened.
         if (club is null) return Describe(_roster.Select(null));
-        return Describe(_roster.Search(club.Name));
+        return Describe(_roster.FilterByClubId(club.DemonstrationId));
     }
 
     private static OfflineWorkspaceState Describe(OfflineRosterState state)
