@@ -1,0 +1,426 @@
+{
+  "schema": "f32-human-review-preparation/v1",
+  "scope": "OFFLINE_DOCUMENTARY_PREPARATION_ONLY",
+  "baseline": {
+    "implementationCommit": "486fabe2aff423fb5544110ec992ba6b1707b317",
+    "mappingCommit": "df5be0493a1ac7be57208ff0e91c2d7193dfec73",
+    "f31ManifestPath": "evidence/f31/minimal_map_readiness.json",
+    "f31ManifestBlob": "adb0dc1e83d09337afc04e425a9ca73d52c8d8dc",
+    "build": "FM2008 8.0.2v1",
+    "referenceKind": "VERSIONED_DOCUMENTS_NOT_INDEPENDENT_OBSERVATIONS"
+  },
+  "criteria": [
+    {
+      "id": "A01",
+      "evidenceState": "PARTIAL",
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-01",
+        "RA-06"
+      ],
+      "reviewStatus": "PENDING_INDEPENDENT_REVIEW",
+      "reviewerFinding": null,
+      "reviewedAt": null,
+      "blockingGap": "Revisar corrida de identidade de PID, executável e hash; fixtures de troca concorrente"
+    },
+    {
+      "id": "A02",
+      "evidenceState": "PARTIAL",
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-01"
+      ],
+      "reviewStatus": "PENDING_INDEPENDENT_REVIEW",
+      "reviewerFinding": null,
+      "reviewedAt": null,
+      "blockingGap": "Registrar base por instância; realocação real não observada, sem forçar cenário"
+    },
+    {
+      "id": "A03",
+      "evidenceState": "SAMPLED",
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-02",
+        "RA-03"
+      ],
+      "reviewStatus": "PENDING_INDEPENDENT_REVIEW",
+      "reviewerFinding": null,
+      "reviewedAt": null,
+      "blockingGap": "Cabeçalhos e contagens amostrais; sem validação exaustiva da tabela"
+    },
+    {
+      "id": "A04",
+      "evidenceState": "USER_DECLARED",
+      "sourceIds": [
+        "MATRIX",
+        "RISKS",
+        "SECOND_SAVE",
+        "PROTOCOL"
+      ],
+      "riskIds": [
+        "RA-05"
+      ],
+      "reviewStatus": "PENDING_INDEPENDENT_REVIEW",
+      "reviewerFinding": null,
+      "reviewedAt": null,
+      "blockingGap": "9/9 pares em amostras distribuídas de dois saves segundo conferência declarada; confirmar nome comum e proveniência"
+    },
+    {
+      "id": "A05",
+      "evidenceState": "SIMULATED",
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-04"
+      ],
+      "reviewStatus": "PENDING_INDEPENDENT_REVIEW",
+      "reviewerFinding": null,
+      "reviewedAt": null,
+      "blockingGap": "Falhas adversas de ponteiros e strings simuladas; TOCTOU real não demonstrado"
+    },
+    {
+      "id": "A06",
+      "evidenceState": "PARTIAL",
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-03"
+      ],
+      "reviewStatus": "PENDING_INDEPENDENT_REVIEW",
+      "reviewerFinding": null,
+      "reviewedAt": null,
+      "blockingGap": "Invariante best-effort; ABA e alteração in-place não eliminados"
+    },
+    {
+      "id": "A07",
+      "evidenceState": "PARTIAL",
+      "sourceIds": [
+        "MATRIX",
+        "RISKS",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-02",
+        "RA-06"
+      ],
+      "reviewStatus": "PENDING_INDEPENDENT_REVIEW",
+      "reviewerFinding": null,
+      "reviewedAt": null,
+      "blockingGap": "Reinício normal demonstrado; interrupção durante leitura real não comprovada"
+    },
+    {
+      "id": "A08",
+      "evidenceState": "SIMULATED",
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-02",
+        "RA-03"
+      ],
+      "reviewStatus": "PENDING_INDEPENDENT_REVIEW",
+      "reviewerFinding": null,
+      "reviewedAt": null,
+      "blockingGap": "Consulta incremental offline; política de invalidação sob mudanças estruturais deve ser revalidada"
+    },
+    {
+      "id": "A09",
+      "evidenceState": "BLOCKED_SAFE",
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-08"
+      ],
+      "reviewStatus": "PENDING_INDEPENDENT_REVIEW",
+      "reviewerFinding": null,
+      "reviewedAt": null,
+      "blockingGap": "UI offline e política somente leitura; nenhuma conexão operacional"
+    },
+    {
+      "id": "A10",
+      "evidenceState": "SAMPLED",
+      "sourceIds": [
+        "MATRIX",
+        "RISKS",
+        "SECOND_SAVE",
+        "PROTOCOL"
+      ],
+      "riskIds": [
+        "RA-05"
+      ],
+      "reviewStatus": "PENDING_INDEPENDENT_REVIEW",
+      "reviewerFinding": null,
+      "reviewedAt": null,
+      "blockingGap": "Nove índices distribuídos em ambos os saves com conferência declarada; não extrapolar para tabela inteira"
+    },
+    {
+      "id": "A11",
+      "evidenceState": "PARTIAL",
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-06"
+      ],
+      "reviewStatus": "PENDING_INDEPENDENT_REVIEW",
+      "reviewerFinding": null,
+      "reviewedAt": null,
+      "blockingGap": "Hash/variante identificados; ensaios negativos de compatibilidade e corrida pendentes"
+    },
+    {
+      "id": "A12",
+      "evidenceState": "GATE_BLOCKED",
+      "sourceIds": [
+        "MATRIX",
+        "RISKS",
+        "PROTOCOL"
+      ],
+      "riskIds": [
+        "RA-01",
+        "RA-02",
+        "RA-03",
+        "RA-04",
+        "RA-05",
+        "RA-06",
+        "RA-07",
+        "RA-08"
+      ],
+      "reviewStatus": "PENDING_INDEPENDENT_REVIEW",
+      "reviewerFinding": null,
+      "reviewedAt": null,
+      "blockingGap": "Revisão independente e decisão humana formal ausentes; não derivar de CI ou PR"
+    }
+  ],
+  "risks": [
+    {
+      "id": "RA-01",
+      "sourceIds": [
+        "MATRIX",
+        "RISKS"
+      ],
+      "description": "Base/módulo incorreto; identidade do processo",
+      "disposition": "NOT_REVIEWED",
+      "accepted": false,
+      "acceptedBy": null,
+      "acceptedAt": null,
+      "mitigationReview": null
+    },
+    {
+      "id": "RA-02",
+      "sourceIds": [
+        "MATRIX",
+        "RISKS"
+      ],
+      "description": "Ponteiros e índices transitórios entre saves/sessões",
+      "disposition": "NOT_REVIEWED",
+      "accepted": false,
+      "acceptedBy": null,
+      "acceptedAt": null,
+      "mitigationReview": null
+    },
+    {
+      "id": "RA-03",
+      "sourceIds": [
+        "MATRIX",
+        "RISKS"
+      ],
+      "description": "Leituras rasgadas e efeito ABA",
+      "disposition": "NOT_REVIEWED",
+      "accepted": false,
+      "acceptedBy": null,
+      "acceptedAt": null,
+      "mitigationReview": null
+    },
+    {
+      "id": "RA-04",
+      "sourceIds": [
+        "MATRIX",
+        "RISKS"
+      ],
+      "description": "Ponteiros, strings e leituras parciais",
+      "disposition": "NOT_REVIEWED",
+      "accepted": false,
+      "acceptedBy": null,
+      "acceptedAt": null,
+      "mitigationReview": null
+    },
+    {
+      "id": "RA-05",
+      "sourceIds": [
+        "MATRIX",
+        "RISKS"
+      ],
+      "description": "Identificação incorreta fora da amostra",
+      "disposition": "NOT_REVIEWED",
+      "accepted": false,
+      "acceptedBy": null,
+      "acceptedAt": null,
+      "mitigationReview": null
+    },
+    {
+      "id": "RA-06",
+      "sourceIds": [
+        "MATRIX",
+        "RISKS"
+      ],
+      "description": "Mudança de build/processo/módulo",
+      "disposition": "NOT_REVIEWED",
+      "accepted": false,
+      "acceptedBy": null,
+      "acceptedAt": null,
+      "mitigationReview": null
+    },
+    {
+      "id": "RA-07",
+      "sourceIds": [
+        "MATRIX",
+        "RISKS"
+      ],
+      "description": "Extrapolação indevida dos offsets legados",
+      "disposition": "NOT_REVIEWED",
+      "accepted": false,
+      "acceptedBy": null,
+      "acceptedAt": null,
+      "mitigationReview": null
+    },
+    {
+      "id": "RA-08",
+      "sourceIds": [
+        "MATRIX",
+        "RISKS"
+      ],
+      "description": "Escrita acidental/permissão excessiva",
+      "disposition": "NOT_REVIEWED",
+      "accepted": false,
+      "acceptedBy": null,
+      "acceptedAt": null,
+      "mitigationReview": null
+    }
+  ],
+  "gates": [
+    {
+      "id": "G1",
+      "label": "Build/process identity and address provenance",
+      "criteriaIds": [
+        "A01",
+        "A02",
+        "A11"
+      ],
+      "state": "PENDING",
+      "reviewer": null,
+      "completedAt": null
+    },
+    {
+      "id": "G2",
+      "label": "Identity samples and independent data comparison",
+      "criteriaIds": [
+        "A03",
+        "A04",
+        "A10"
+      ],
+      "state": "PENDING",
+      "reviewer": null,
+      "completedAt": null
+    },
+    {
+      "id": "G3",
+      "label": "Consistency, cancellation and resource lifecycle",
+      "criteriaIds": [
+        "A05",
+        "A06",
+        "A07",
+        "A08"
+      ],
+      "state": "PENDING",
+      "reviewer": null,
+      "completedAt": null
+    },
+    {
+      "id": "G4",
+      "label": "Read-only permissions and strict scope",
+      "criteriaIds": [
+        "A09"
+      ],
+      "state": "PENDING",
+      "reviewer": null,
+      "completedAt": null
+    },
+    {
+      "id": "G5",
+      "label": "Independent review, unresolved risks and formal decision",
+      "criteriaIds": [
+        "A12"
+      ],
+      "state": "PENDING",
+      "reviewer": null,
+      "completedAt": null
+    }
+  ],
+  "reviewProtocol": {
+    "identity": null,
+    "authority": null,
+    "reviewDate": null,
+    "reviewedEvidenceIds": [],
+    "independentAssessment": null,
+    "residualRiskDecision": null,
+    "decision": "NOT_MADE",
+    "approval": null,
+    "signature": null
+  },
+  "limitations": [
+    "Nove identidades distribuídas por partida e validação de usuário declarada não equivalem a verificação independente de toda a tabela.",
+    "Revisão de código, CI e PR não conferem autoridade humana nem confirmam empiricamente estabilidade de memória real.",
+    "Realocação natural de base de módulo e interrupção de leitura real permanecem não observadas.",
+    "O mapeamento inclui apenas identidade mínima; nenhum dos 229 offsets legados está autorizado.",
+    "A interface WPF permanece offline e sintética, sem adaptador para jogo em execução.",
+    "Hashes de documentos verificam conteúdo versionado, não autenticam logs, amostras históricas ou aprovação."
+  ],
+  "wpf": {
+    "state": "OFFLINE_ONLY",
+    "dataSource": "SYNTHETIC",
+    "realAdapterEnabled": false,
+    "writeEnabled": false,
+    "approvedMapCount": 0
+  },
+  "governance": {
+    "approvalState": "NoApprovedPlayerMaps",
+    "approved": false,
+    "operational": false,
+    "approvedPlayerMaps": 0,
+    "B03": "PENDING-DECLARED",
+    "A12": "GATE-BLOQUEADO",
+    "decision": "NOT_MADE",
+    "humanReviewer": null,
+    "humanReviewTimestamp": null,
+    "humanAuthority": null,
+    "humanApproval": null,
+    "riskAcceptances": {
+      "RA-01": null,
+      "RA-02": null,
+      "RA-03": null,
+      "RA-04": null,
+      "RA-05": null,
+      "RA-06": null,
+      "RA-07": null,
+      "RA-08": null
+    }
+  },
+  "nextAction": "HUMAN_EVIDENCE_REVIEW_NOT_STARTED"
+}
