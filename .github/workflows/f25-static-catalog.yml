@@ -1,0 +1,33 @@
+name: F25 static CLI symbol catalog tests
+on:
+  push:
+    paths:
+      - "tools/f25_catalog.py"
+      - "tests/FMRTE2008.MemorySimulation/test_f25_catalog.py"
+      - ".github/workflows/f25-static-catalog.yml"
+  pull_request:
+    paths:
+      - "tools/f25_catalog.py"
+      - "tests/FMRTE2008.MemorySimulation/test_f25_catalog.py"
+      - ".github/workflows/f25-static-catalog.yml"
+permissions:
+  contents: read
+jobs:
+  static-catalog:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test synthetic CLI symbol catalogs and malformed metadata
+        run: python -m unittest discover -s tests/FMRTE2008.MemorySimulation -p test_f25_catalog.py -v
+      - name: Confirm original executable is not committed
+        shell: python
+        run: |
+          from pathlib import Path
+          assert not any(p.name.lower()=="fmrte.exe" for p in Path(".").rglob("*") if p.is_file())
+          print("Historical executable absent; no execution or process access")
