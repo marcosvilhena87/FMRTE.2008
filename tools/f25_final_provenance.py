@@ -71,12 +71,25 @@ def verify_original(catalog_path,archive_path):
     return check_pair(matrix,proof)
 def evidence_report(matrix,proof,run=None):
     run=run or {}
+    pr_head=run.get("PR_HEAD_SHA")
+    event_path=run.get("GITHUB_EVENT_PATH")
+    if event_path and pathlib.Path(event_path).is_file():
+        event=json.loads(pathlib.Path(event_path).read_text(encoding="utf-8"))
+        pr_head=(event.get("pull_request") or {}).get("head",{}).get("sha") or pr_head
+    artifacts={p:sha((ROOT/p).read_bytes()) for p in (
+        "tests/FMRTE2008.MemorySimulation/F25HistoricalInventory.json",
+        "tests/FMRTE2008.MemorySimulation/F25FunctionalReconstructionMatrix.json",
+        "tests/FMRTE2008.MemorySimulation/F25CatalogTypeProvenance.json",
+        "tools/f25_inventory.py","tools/f25_clr_metadata.py","tools/f25_catalog.py",
+        "tools/f25_final_provenance.py")}
     return dict(schemaVersion=1,kind="f25-final-documentary-provenance",
         matrixSha256=sha(MATRIX.read_bytes()),proofSha256=sha(PROOF.read_bytes()),
         catalogSha256=CAT_SHA,archiveSha256=ZIP_SHA,exeSha256=EXE_SHA,
         symbolsCrossChecked=len(proof["types"]),sourceArtifactPaths=list(TARGETS),
+        fileSha256=artifacts,
         execution=dict(runId=run.get("GITHUB_RUN_ID"),runAttempt=run.get("GITHUB_RUN_ATTEMPT"),
-        event=run.get("GITHUB_EVENT_NAME"),checkoutSha=run.get("GITHUB_SHA")),
+        event=run.get("GITHUB_EVENT_NAME"),checkoutSha=run.get("GITHUB_SHA"),
+        prHeadSha=pr_head),
         checks=dict(offlineDocumentary=True,originalZipReverifiedInCI=False,
         githubChecksAreHumanApproval=False),decision=dict(approved=False,operational=False,
         humanDecision="NOT_MADE",acceptedRisks=0))
