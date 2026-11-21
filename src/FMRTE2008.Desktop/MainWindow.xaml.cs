@@ -129,6 +129,9 @@ public partial class MainWindow : Window
     private void OpenOfflineProfiles_Click(object sender, RoutedEventArgs e) =>
         new OfflineProfilesWindow { Owner = this }.ShowDialog();
 
+    private void OpenOfflineRoster_Click(object sender, RoutedEventArgs e) =>
+        new OfflineRosterWindow { Owner = this }.ShowDialog();
+
     private void SelectExeButton_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new OpenFileDialog
