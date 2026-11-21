@@ -1,0 +1,55 @@
+<Window x:Class="FMRTE2008.Desktop.OfflineProfilesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="FMRTE2008 — Perfis fictícios (offline)"
+        Width="930" Height="650" MinWidth="760" MinHeight="520">
+  <Grid Margin="20">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="2*"/>
+      <RowDefinition Height="3*"/>
+    </Grid.RowDefinitions>
+    <StackPanel Grid.Row="0" Margin="0,0,0,15">
+      <TextBlock Text="F26 — Perfis de jogadores fictícios" FontSize="23" FontWeight="SemiBold"/>
+      <TextBlock Text="DADOS INVENTADOS — SEM PROCESSO, SEM SAVE, SEM MAPAS DE MEMÓRIA"
+                 FontWeight="Bold" Foreground="DarkRed" TextWrapping="Wrap" Margin="0,7,0,0"/>
+      <TextBlock Text="Este painel usa somente três registros inventados para demonstrar interface, atributos e contratos."
+                 TextWrapping="Wrap" Margin="0,5,0,0"/>
+    </StackPanel>
+    <DockPanel Grid.Row="1" Margin="0,0,0,12">
+      <Button DockPanel.Dock="Right" Content="Pesquisar" Padding="13,6" Click="Search_Click" Margin="8,0,0,0"/>
+      <TextBox x:Name="SearchBox" MaxLength="120" MinHeight="31" VerticalContentAlignment="Center"/>
+    </DockPanel>
+    <DataGrid Grid.Row="2" x:Name="ProfilesGrid" IsReadOnly="True" AutoGenerateColumns="False"
+              SelectionChanged="ProfilesGrid_SelectionChanged" CanUserAddRows="False"
+              Margin="0,0,0,12">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Identificador fictício" Binding="{Binding DemonstrationId}" Width="*"/>
+        <DataGridTextColumn Header="Nome" Binding="{Binding DisplayName}" Width="2*"/>
+        <DataGridTextColumn Header="Posição" Binding="{Binding Position}" Width="*"/>
+      </DataGrid.Columns>
+    </DataGrid>
+    <Grid Grid.Row="3">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <GroupBox Header="Atributos (escala demonstrativa 1–20)" Margin="0,0,8,0">
+        <DataGrid x:Name="AttributesGrid" IsReadOnly="True" AutoGenerateColumns="False"
+                  CanUserAddRows="False">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="Atributo" Binding="{Binding Name}" Width="*"/>
+            <DataGridTextColumn Header="Valor" Binding="{Binding Value}" Width="75"/>
+          </DataGrid.Columns>
+        </DataGrid>
+      </GroupBox>
+      <GroupBox Grid.Column="1" Header="Contrato fictício" Margin="8,0,0,0">
+        <StackPanel Margin="12">
+          <TextBlock x:Name="ClubText" Margin="0,0,0,10" TextWrapping="Wrap"/>
+          <TextBlock x:Name="DatesText" Margin="0,0,0,10" TextWrapping="Wrap"/>
+          <TextBlock x:Name="WageText" TextWrapping="Wrap"/>
+          <TextBlock Text="Nenhum campo é editável e nenhuma informação é enviada ao jogo."
+                     Foreground="DarkRed" TextWrapping="Wrap" Margin="0,25,0,0"/>
+        </StackPanel>
+      </GroupBox>
+    </Grid>
+  </Grid>
+</Window>
