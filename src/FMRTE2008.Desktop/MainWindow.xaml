@@ -24,6 +24,9 @@
       <Button Content="Abrir elenco fictício F27 (offline)" Click="OpenOfflineRoster_Click"
               HorizontalAlignment="Left" Padding="12,6" Margin="0,0,0,10"
               ToolTip="Navegação entre jogadores, clubes e atributos fictícios; sem jogo."/>
+      <Button Content="Abrir espaço integrado F28 (offline)" Click="OpenOfflineWorkspace_Click"
+              HorizontalAlignment="Left" Padding="12,6" Margin="0,0,0,10"
+              ToolTip="Consulta unificada de jogadores e clubes exclusivamente inventados."/>
     </StackPanel>
     <Border Grid.Row="1" Background="#FFF1F5F9" Padding="12" CornerRadius="5">
       <StackPanel>

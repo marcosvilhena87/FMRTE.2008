@@ -1,0 +1,57 @@
+name: F28 offline integrated workspace
+on:
+  push:
+    paths:
+      - "src/FMRTE2008.Application/OfflineWorkspacePresenter.cs"
+      - "src/FMRTE2008.Application/OfflineRosterPresenter.cs"
+      - "src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml"
+      - "src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml.cs"
+      - "src/FMRTE2008.Desktop/MainWindow.xaml"
+      - "src/FMRTE2008.Desktop/MainWindow.xaml.cs"
+      - "tests/FMRTE2008.OfflineWorkspace/**"
+      - "tests/FMRTE2008.OfflineWorkspace.Windows/**"
+      - ".github/workflows/f28-offline-workspace.yml"
+  pull_request:
+    paths:
+      - "src/FMRTE2008.Application/OfflineWorkspacePresenter.cs"
+      - "src/FMRTE2008.Application/OfflineRosterPresenter.cs"
+      - "src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml"
+      - "src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml.cs"
+      - "src/FMRTE2008.Desktop/MainWindow.xaml"
+      - "src/FMRTE2008.Desktop/MainWindow.xaml.cs"
+      - "tests/FMRTE2008.OfflineWorkspace/**"
+      - "tests/FMRTE2008.OfflineWorkspace.Windows/**"
+      - ".github/workflows/f28-offline-workspace.yml"
+permissions:
+  contents: read
+jobs:
+  f28-presenter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Deterministic player and club workspace regression
+        run: dotnet run --configuration Release --project tests/FMRTE2008.OfflineWorkspace/FMRTE2008.OfflineWorkspace.csproj
+  f28-wpf:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build WPF without starting the Football Manager process
+        run: dotnet build src/FMRTE2008.Desktop/FMRTE2008.Desktop.csproj --configuration Release
+      - name: In-process STA WPF component navigation smoke
+        run: dotnet run --configuration Release --project tests/FMRTE2008.OfflineWorkspace.Windows/FMRTE2008.OfflineWorkspace.Windows.csproj
+      - name: Reject native process/write APIs in new F28 code
+        shell: pwsh
+        run: |
+          $paths = @('src/FMRTE2008.Application/OfflineWorkspacePresenter.cs','src/FMRTE2008.Application/OfflineRosterPresenter.cs','src/FMRTE2008.Desktop/OfflineWorkspaceWindow.xaml.cs')
+          foreach ($path in $paths) {
+            $source = Get-Content -Raw $path
+            if ($source -match 'OpenProcess\s*\(|ReadProcessMemory|WriteProcessMemory|Process\.GetProcess|DllImport|LoadLibrary|File\.WriteAllBytes|File\.WriteAllText') {
+              throw "Forbidden process or write call: $path"
+            }
+          }
