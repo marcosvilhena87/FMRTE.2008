@@ -1,0 +1,42 @@
+name: F30.3 offline displayed WPF native resources
+on:
+  push:
+    paths:
+      - "tests/FMRTE2008.OfflineNativeWindows/**"
+      - "src/FMRTE2008.Desktop/OfflineTestAccess.cs"
+      - ".github/workflows/f30-3-offline-native-wpf.yml"
+  pull_request:
+    paths:
+      - "tests/FMRTE2008.OfflineNativeWindows/**"
+      - "src/FMRTE2008.Desktop/OfflineTestAccess.cs"
+      - ".github/workflows/f30-3-offline-native-wpf.yml"
+permissions:
+  contents: read
+jobs:
+  f30-3-native-wpf:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Compile synthetic visible-window WPF test
+        run: dotnet build -c Release tests/FMRTE2008.OfflineNativeWindows/FMRTE2008.OfflineNativeWindows.csproj
+      - name: Check visible HWND lifecycle and own-process handle budgets
+        run: dotnet run -c Release --no-build --project tests/FMRTE2008.OfflineNativeWindows/FMRTE2008.OfflineNativeWindows.csproj
+      - name: Reject cross-process and save APIs in F30.3 test
+        shell: pwsh
+        run: |
+          $path = 'tests/FMRTE2008.OfflineNativeWindows/Program.cs'
+          $source = Get-Content $path -Raw
+          $forbidden = 'ReadProcessMemory|WriteProcessMemory|OpenProcess\s*\(|Process\.GetProcessById|Process\.GetProcesses|DllImport|LibraryImport|LoadLibrary|File\.WriteAllBytes|File\.WriteAllText|Process\.Start\s*\('
+          if (($source + [Environment]::NewLine + 'ReadProcessMemory') -notmatch $forbidden) {
+            throw 'F30.3 negative mutation not detected'
+          }
+          if ($source -match $forbidden) {
+            throw 'Forbidden cross-process or save API in F30.3'
+          }
+          if ($source -notmatch 'Process\.GetCurrentProcess') {
+            throw 'F30.3 native budget not scoped to the own test process'
+          }
