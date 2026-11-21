@@ -390,7 +390,7 @@ def negatives(base,source_root):
     mutation("A07-gap",lambda x:x["criteria"][6].update(gap="Incorrect long claim about completed live tests"),"criterion gap A07")
     mutation("A08-status",lambda x:x["criteria"][7].update(status="SAMPLED"),"criterion status A08")
     mutation("A09-status",lambda x:x["criteria"][8].update(status="SAMPLED"),"criterion status A09")
-    mutation("A10-status",lambda x:x["criteria"][9].update(status="SAMPLED"),"criterion status A10")
+    mutation("A10-status",lambda x:x["criteria"][9].update(status="PARTIAL"),"criterion status A10")
     mutation("A11-status",lambda x:x["criteria"][10].update(status="SAMPLED"),"criterion status A11")
     mutation("A12-status",lambda x:x["criteria"][11].update(status="PARTIAL"),"criterion status A12")
     mutation("missing-criterion",lambda x:x["criteria"].pop(),"criteria count")
