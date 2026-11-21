@@ -1,0 +1,23 @@
+# F30.2 — Ciclo de vida e integridade de recursos WPF (somente offline)
+
+## Objetivo e base
+Base `main@288aefb66aadd23842355f1ea8601c96eba48201`, com F30.1-R integrado e aprovado. Exercitar repetidas criações e fechamentos da janela WPF com **somente os perfis fictícios fechados** (`Baseline` e `CollisionStress`). Não abrir FM2008, consultar PID, memória de processo, saves, rede ou arquivos de usuário.
+
+## Protocolo determinístico
+- Projeto Windows STA separado em `tests/FMRTE2008.OfflineLifecycle.Windows`.
+- 48 janelas criadas/fechadas sequencialmente, alternando cenário básico de três perfis e adversarial de seis perfis, em três fluxos de operação: busca vazia/reset, navegação/recuperação, falha persistente/fechamento no estado indisponível.
+- Verificação de identidade `DEMO-001`/`CLUB-001` em cada janela recém-criada, garantindo que um estado de falha da janela anterior não persiste em nova janela.
+- Observação explícita de uma ocorrência dos eventos `Closing` e `Closed` por ciclo e ausência de duplicação no evento do botão reset durante o ensaio.
+- Após sair do método `NoInlining` que cria/fecha a janela, guardar somente `WeakReference`; executar três rodadas de GC forçado e exigir retenção de no máximo quatro entre 48 janelas fechadas.
+- A falha persistente é injetada somente pelo gancho interno de testes. Uma janela deve fechar mesmo em estado indisponível.
+
+## Limitações interpretativas
+A verificação por `WeakReference` sinaliza retenção forte gerenciada *sob as condições de GC deste runner*, mas não substitui instrumentos de detecção de vazamento nem garante liberação de handles nativos. Os eventos são disparados com `RaiseEvent` em STA e a janela não é exibida visualmente: não comprova interação física de teclado/mouse, automação visual, foco, layout real, alternância de threads ou acessibilidade. Eventos `Closing`/`Closed` provam ciclo de vida lógico, não a ausência de vazamentos de recursos de plataforma.
+
+## Critérios de aceitação
+1. Check `f30-2-wpf-lifecycle` `completed/success`, com relatório determinístico de 48 janelas, contagem de asserções e retenção gerenciada.
+2. Testes F27/F28/F29/F30.1 e workflows de segurança pré-existentes sem regressões.
+3. Varredura negativa de operações proibidas abrangendo código novo, incluindo mutação em memória que confirme a ação do padrão.
+4. `FM2008.mapping` inalterado, e nenhuma habilitação operacional, leitura/escrita de memória ou save.
+5. Manter `NoApprovedPlayerMaps`, `approved=false`, `operational=false`, `approvedPlayerMaps=0`, `B03=PENDING-DECLARED`, `A12=GATE-BLOQUEADO`, `decision=NOT_MADE` e RA-01–RA-08 sem aceite.
+6. PR em **Draft**, sem merge, até CI completo e revisão técnica independente do HEAD final.
