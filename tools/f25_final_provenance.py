@@ -1,7 +1,7 @@
 """F25.5-R independent, fail-closed documentary provenance checks; no executable in CI."""
 from __future__ import annotations
 import argparse, copy, hashlib, json, os, pathlib, sys
-ROOT=pathlib.Path(__file__).resolve().parents[2]
+ROOT=pathlib.Path(__file__).resolve().parents[1]
 FOLDER=ROOT/"tests/FMRTE2008.MemorySimulation"
 MATRIX=FOLDER/"F25FunctionalReconstructionMatrix.json"
 PROOF=FOLDER/"F25CatalogTypeProvenance.json"
