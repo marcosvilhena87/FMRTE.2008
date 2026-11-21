@@ -1,32 +1,24 @@
-# F30.1 — Resistência WPF determinística (somente offline)
+# F30.1-R — Resistência WPF determinística (somente offline)
 
 ## Escopo
-Exercita a janela WPF em processo STA, sem execução do FM2008, fontes externas,
-PID, API nativa de memória, offsets, saves ou gravação. O cenário fechado
-`OfflineRosterScenario.CollisionStress` contém exclusivamente seis jogadores
-inventados, incluindo colisões deliberadas de nome e identificador textual.
+Testes de componentes WPF em STA com o cenário fechado `OfflineRosterScenario.CollisionStress` de seis perfis inteiramente inventados. Não há FM2008 executado, fonte externa, acesso a processo, offsets, saves, leitura ou escrita de memória.
 
-## Protocolo reprodutível
-`F30Stress.Run` é executado no mesmo binário Windows de testes F29, após as
-verificações de regressão existentes. Executa exatamente 120 ciclos, sem
-aleatoriedade nem temporizadores, incluindo pesquisas textuais, nomes
-duplicados, seleção por `DEMO-NNN`, filtro exato por `CLUB-NNN`, limites
-anterior/próximo, lista vazia e limpeza integral dos detalhes. A cada dez
-ciclos, injeta erro recuperável, falha persistente de reset, segunda tentativa
-falha e recuperação por uma nova tentativa explícita. Falhas interrompem
-a execução com número do ciclo e invariante violado.
+## Sequências e invariantes
+- 120 ciclos determinísticos, compostos por três sequências distintas, alternadas por `iteration % 3` (40 repetições de cada).
+- Colisões de nomes, IDs embutidos em texto de outro jogador, clubes com nomes próximos, navegação nos limites e seleção por ID único.
+- Em cada estado selecionado, igualdade **exata** dos IDs `DEMO-NNN`/`CLUB-NNN` na linha e nos detalhes, com presença de contrato e atributos fictícios.
+- Em lista vazia ou estado indisponível, ausência de seleção e limpeza de identificação, cidade, contrato, salário, membros e grades de atributos, além da verificação dos botões.
+- A cada dez ciclos, erro sintético recuperável seguido de falha **sustentada** durante cinco resets explícitos. Eventos sintéticos de navegação, pesquisa e clube nesse estado devem permanecer inertes. O teste remove explicitamente a falha e exige novo clique em reset para recuperar a tela.
+- Todas as asserções usam ciclo e descrição na mensagem de erro. A contagem de asserções é informada no log da execução.
 
-## Limites da evidência
-Testes de componentes WPF instanciados em STA com `RaiseEvent`; não representam
-automação física de mouse/teclado, renderização por screenshot, acessibilidade,
-medição de vazamentos de memória ou execução prolongada em tempo real.
+## CI e proteção
+O workflow F29 existente compila e executa o teste F30 no Windows, preserva o conjunto Linux e verifica operações proibidas nas fontes da UI/aplicação **e no novo F30Stress.cs**. Uma mutação em memória com assinatura proibida deve ser detectada pela mesma expressão regular, sem alterar o workspace.
 
-## Critérios de aceitação
-- Mensagem `F30.1 WPF PASS` com 120 ciclos e contagem das asserções.
-- Regressões F27/F28/F29 e compilação Windows aprovadas.
-- Sem recursão na recuperação nem vazamento de dados após reset falho.
-- `FM2008.mapping` permanece inalterado.
-- `NoApprovedPlayerMaps`, `approved=false`, `operational=false`,
-  `approvedPlayerMaps=0`, `B03=PENDING-DECLARED`, `A12=GATE-BLOQUEADO`,
-  `decision=NOT_MADE` e RA-01–RA-08 sem aceite permanecem intocados.
-- PR em Draft até revisão independente do HEAD final e CI completo.
+## Limitações
+`RaiseEvent` em STA não constitui teste de mouse/teclado físico, renderização visual, acessibilidade, concorrência real entre threads, cronômetro de longa duração ou medições de alocação e vazamentos. O ensaio reutiliza uma janela; ciclos de abertura/fechamento e orçamento de recursos ficam para fase posterior.
+
+## Segurança e aceitação
+- PR em Draft até CI integral e revisão técnica independente do HEAD final.
+- `FM2008.mapping` intacto.
+- `NoApprovedPlayerMaps`, `approved=false`, `operational=false`, `approvedPlayerMaps=0`, `B03=PENDING-DECLARED`, `A12=GATE-BLOQUEADO`, `decision=NOT_MADE` e RA-01–RA-08 sem aceite.
+- Nenhum `fm.exe`, conexão live, acesso a memória, modificação de save ou autorização de mapas.
