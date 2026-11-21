@@ -1,0 +1,218 @@
+{
+  "schema": "f31-readiness/v1",
+  "scope": "OFFLINE_PLANNING_ONLY",
+  "base": {
+    "repo": "marcosvilhena87/FMRTE.2008",
+    "commit": "47d9d6f4c460490888573842d23ba571e78b6901",
+    "mappingRepo": "marcosvilhena87/FM2008.mapping",
+    "mappingCommit": "df5be0493a1ac7be57208ff0e91c2d7193dfec73",
+    "build": "FM2008 8.0.2v1",
+    "fixtureSource": "synthetic-only"
+  },
+  "criteria": [
+    {
+      "id": "A01",
+      "status": "PARTIAL",
+      "gap": "Revisar corrida de identidade de PID, executável e hash; fixtures de troca concorrente",
+      "risks": [
+        "RA-01",
+        "RA-06"
+      ]
+    },
+    {
+      "id": "A02",
+      "status": "PARTIAL",
+      "gap": "Registrar base por instância; realocação real não observada, sem forçar cenário",
+      "risks": [
+        "RA-01"
+      ]
+    },
+    {
+      "id": "A03",
+      "status": "SAMPLED",
+      "gap": "Cabeçalhos e contagens amostrais; sem validação exaustiva da tabela",
+      "risks": [
+        "RA-02",
+        "RA-03"
+      ]
+    },
+    {
+      "id": "A04",
+      "status": "USER_DECLARED",
+      "gap": "9/9 pares em amostras distribuídas de dois saves segundo conferência declarada; confirmar nome comum e proveniência",
+      "risks": [
+        "RA-05"
+      ]
+    },
+    {
+      "id": "A05",
+      "status": "SIMULATED",
+      "gap": "Falhas adversas de ponteiros e strings simuladas; TOCTOU real não demonstrado",
+      "risks": [
+        "RA-04"
+      ]
+    },
+    {
+      "id": "A06",
+      "status": "PARTIAL",
+      "gap": "Invariante best-effort; ABA e alteração in-place não eliminados",
+      "risks": [
+        "RA-03"
+      ]
+    },
+    {
+      "id": "A07",
+      "status": "PARTIAL",
+      "gap": "Reinício normal demonstrado; interrupção durante leitura real não comprovada",
+      "risks": [
+        "RA-02",
+        "RA-06"
+      ]
+    },
+    {
+      "id": "A08",
+      "status": "SIMULATED",
+      "gap": "Consulta incremental offline; política de invalidação sob mudanças estruturais deve ser revalidada",
+      "risks": [
+        "RA-02",
+        "RA-03"
+      ]
+    },
+    {
+      "id": "A09",
+      "status": "BLOCKED_SAFE",
+      "gap": "UI offline e política somente leitura; nenhuma conexão operacional",
+      "risks": [
+        "RA-08"
+      ]
+    },
+    {
+      "id": "A10",
+      "status": "SAMPLED",
+      "gap": "Nove índices distribuídos em ambos os saves com conferência declarada; não extrapolar para tabela inteira",
+      "risks": [
+        "RA-05"
+      ]
+    },
+    {
+      "id": "A11",
+      "status": "PARTIAL",
+      "gap": "Hash/variante identificados; ensaios negativos de compatibilidade e corrida pendentes",
+      "risks": [
+        "RA-06"
+      ]
+    },
+    {
+      "id": "A12",
+      "status": "GATE_BLOCKED",
+      "gap": "Revisão independente e decisão humana formal ausentes; não derivar de CI ou PR",
+      "risks": [
+        "RA-01",
+        "RA-02",
+        "RA-03",
+        "RA-04",
+        "RA-05",
+        "RA-06",
+        "RA-07",
+        "RA-08"
+      ]
+    }
+  ],
+  "risks": [
+    {
+      "id": "RA-01",
+      "description": "Base/módulo incorreto; identidade do processo",
+      "status": "NO_ACCEPTANCE",
+      "acceptedBy": null,
+      "acceptedAt": null
+    },
+    {
+      "id": "RA-02",
+      "description": "Ponteiros e índices transitórios entre saves/sessões",
+      "status": "NO_ACCEPTANCE",
+      "acceptedBy": null,
+      "acceptedAt": null
+    },
+    {
+      "id": "RA-03",
+      "description": "Leituras rasgadas e efeito ABA",
+      "status": "NO_ACCEPTANCE",
+      "acceptedBy": null,
+      "acceptedAt": null
+    },
+    {
+      "id": "RA-04",
+      "description": "Ponteiros, strings e leituras parciais",
+      "status": "NO_ACCEPTANCE",
+      "acceptedBy": null,
+      "acceptedAt": null
+    },
+    {
+      "id": "RA-05",
+      "description": "Identificação incorreta fora da amostra",
+      "status": "NO_ACCEPTANCE",
+      "acceptedBy": null,
+      "acceptedAt": null
+    },
+    {
+      "id": "RA-06",
+      "description": "Mudança de build/processo/módulo",
+      "status": "NO_ACCEPTANCE",
+      "acceptedBy": null,
+      "acceptedAt": null
+    },
+    {
+      "id": "RA-07",
+      "description": "Extrapolação indevida dos offsets legados",
+      "status": "NO_ACCEPTANCE",
+      "acceptedBy": null,
+      "acceptedAt": null
+    },
+    {
+      "id": "RA-08",
+      "description": "Escrita acidental/permissão excessiva",
+      "status": "NO_ACCEPTANCE",
+      "acceptedBy": null,
+      "acceptedAt": null
+    }
+  ],
+  "observations": [
+    "Duas partidas com amostras distribuídas de nove identidades e conferência manual declarada; não é auditoria externa independente.",
+    "Sem observação real de realocação de ModuleBase; simulação não substitui comprovação.",
+    "Interrupção de leitura real, atomicidade e ABA não comprovadas; não induzir falhas em fm.exe.",
+    "Amostragem não comprova integridade de toda a tabela ou de atributos adicionais.",
+    "Evidências de CI e PR não equivalem a decisão humana ou autenticação independente de coletas."
+  ],
+  "wpfReadiness": {
+    "mode": "OFFLINE_ONLY",
+    "dataSource": "SYNTHETIC",
+    "proposedPort": "IReadOnlyIdentityQuery (design-only)",
+    "allowedFields": [
+      "playerId",
+      "firstName",
+      "lastName",
+      "commonName"
+    ],
+    "operationalAdapterEnabled": false,
+    "requiresExactBuildAndApprovedManifest": true,
+    "requiresIndependentReview": true,
+    "requiresExplicitHumanApproval": true,
+    "writingEnabled": false
+  },
+  "governance": {
+    "approvalState": "NoApprovedPlayerMaps",
+    "approved": false,
+    "operational": false,
+    "approvedPlayerMaps": 0,
+    "B03": "PENDING-DECLARED",
+    "A12": "GATE-BLOQUEADO",
+    "decision": "NOT_MADE",
+    "humanReviewer": null,
+    "humanReviewTimestamp": null,
+    "humanAuthority": null,
+    "humanApproval": null,
+    "ciIsHumanApproval": false,
+    "prReviewIsHumanApproval": false
+  },
+  "nextGate": "INDEPENDENT_EVIDENCE_AND_HUMAN_REVIEW_PENDING"
+}
