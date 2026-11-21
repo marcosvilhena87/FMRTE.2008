@@ -1,0 +1,45 @@
+name: F25 final provenance offline
+on:
+  push:
+    paths:
+      - "tools/f25_final_provenance.py"
+      - "tests/FMRTE2008.MemorySimulation/F25CatalogTypeProvenance.json"
+      - "tests/FMRTE2008.MemorySimulation/F25FunctionalReconstructionMatrix.json"
+      - "tests/FMRTE2008.MemorySimulation/test_f25_final_provenance.py"
+      - ".github/workflows/f25-final-provenance.yml"
+  pull_request:
+    paths:
+      - "tools/f25_final_provenance.py"
+      - "tests/FMRTE2008.MemorySimulation/F25CatalogTypeProvenance.json"
+      - "tests/FMRTE2008.MemorySimulation/F25FunctionalReconstructionMatrix.json"
+      - "tests/FMRTE2008.MemorySimulation/test_f25_final_provenance.py"
+      - ".github/workflows/f25-final-provenance.yml"
+permissions:
+  contents: read
+jobs:
+  final-provenance:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate source-symbol bindings and adverse mutations
+        run: python -m unittest discover -s tests/FMRTE2008.MemorySimulation -p test_f25_final_provenance.py -v
+      - name: Generate CI-specific documentary provenance report
+        run: python tools/f25_final_provenance.py --report f25-evidence/F25FinalProvenance.json
+      - name: Upload immutable CI evidence (not historical attestation)
+        uses: actions/upload-artifact@v4
+        with:
+          name: f25-final-provenance-${{ matrix.os }}-${{ github.event_name }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: f25-evidence/F25FinalProvenance.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Verify historical executable is absent
+        shell: python
+        run: |
+          from pathlib import Path
+          assert not any(p.name.lower()=="fmrte.exe" for p in Path(".").rglob("*") if p.is_file())
