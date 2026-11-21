@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - "src/FMRTE2008.Domain/OfflineExpandedRoster.cs"
+      - "src/FMRTE2008.Domain/OfflineAttributeCategoryCatalog.cs"
       - "src/FMRTE2008.Application/OfflineRosterPresenter.cs"
       - "src/FMRTE2008.Desktop/OfflineRosterWindow.xaml"
       - "src/FMRTE2008.Desktop/OfflineRosterWindow.xaml.cs"
@@ -13,6 +14,7 @@ on:
   pull_request:
     paths:
       - "src/FMRTE2008.Domain/OfflineExpandedRoster.cs"
+      - "src/FMRTE2008.Domain/OfflineAttributeCategoryCatalog.cs"
       - "src/FMRTE2008.Application/OfflineRosterPresenter.cs"
       - "src/FMRTE2008.Desktop/OfflineRosterWindow.xaml"
       - "src/FMRTE2008.Desktop/OfflineRosterWindow.xaml.cs"
@@ -49,7 +51,7 @@ jobs:
       - name: No native process APIs in F27 source files
         shell: pwsh
         run: |
-          $paths = @('src/FMRTE2008.Domain/OfflineExpandedRoster.cs','src/FMRTE2008.Application/OfflineRosterPresenter.cs','src/FMRTE2008.Desktop/OfflineRosterWindow.xaml.cs')
+          $paths = @('src/FMRTE2008.Domain/OfflineExpandedRoster.cs','src/FMRTE2008.Domain/OfflineAttributeCategoryCatalog.cs','src/FMRTE2008.Application/OfflineRosterPresenter.cs','src/FMRTE2008.Desktop/OfflineRosterWindow.xaml.cs')
           foreach ($path in $paths) {
             $source = Get-Content $path -Raw
             if ($source -match 'ReadProcessMemory|WriteProcessMemory|OpenProcess\s*\(|Process\.GetProcess|DllImport|LoadLibrary') { throw "Forbidden process usage in $path" }
