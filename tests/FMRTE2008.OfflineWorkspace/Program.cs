@@ -47,6 +47,25 @@ static class F28Tests
         Check(presenter.NextPlayer().Roster.Selected is null, "navigation cannot revive cleared selection");
         Check(presenter.SelectPlayer("DEMO-001").SelectedClub?.DemonstrationId == "CLUB-001", "restore selection");
         Check(presenter.ShowClub("CLUB-001").Roster.VisiblePlayers.Count == 1, "club workspace navigation");
+        // R01: exact club IDs must not match prefixes or similar name fragments.
+        var closedRoster = new OfflineRosterPresenter();
+        Check(closedRoster.FilterByClubId("CLUB-002").VisiblePlayers.Count == 1 &&
+              closedRoster.Current().Selected?.Club.DemonstrationId == "CLUB-002",
+              "exact club-ID selection");
+        Check(closedRoster.FilterByClubId("CLUB-00").VisiblePlayers.Count == 0,
+              "partial club-ID rejected");
+        Check(closedRoster.FilterByClubId("CLUB-002 ").VisiblePlayers.Count == 0,
+              "club-ID whitespace rejected");
+        Check(closedRoster.FilterByClubId("CLUB-999").VisiblePlayers.Count == 0,
+              "unknown club-ID rejected");
+        Reject<ArgumentNullException>(() => closedRoster.FilterByClubId(null!),
+              "null club-ID rejected");
+        Check(closedRoster.Search("CLUB-003").VisiblePlayers.Count == 1 &&
+              closedRoster.Current().Selected?.Club.DemonstrationId == "CLUB-003",
+              "querying the displayed club ID reproduces exact club selection");
+        Check(presenter.ShowClub("CLUB-001").Roster.VisiblePlayers.All(p =>
+              p.Club.DemonstrationId == "CLUB-001"), "ShowClub never includes other clubs");
+
         Check(presenter.ShowClub("CLUB-999").Roster.Selected is null, "forged club denied");
         Check(presenter.ShowClub(null).SelectedClub is null, "null club denied");
         var empty = presenter.Search("não existe");
@@ -58,6 +77,12 @@ static class F28Tests
         Check(presenter.ShowClub("CLUB-001").Roster.Selected is null, "hidden club cannot open");
         Check(presenter.Search("clube exemplo c").SelectedClub?.DemonstrationId == "CLUB-003", "case insensitive club search");
         Check(presenter.Search("  DEMO-002  ").Roster.Selected?.Profile.DemonstrationId == "DEMO-002", "trimmed ID search");
+        var expectedContract = presenter.Current().SelectedContract;
+        Check(expectedContract is not null &&
+              expectedContract.Club == "Clube Exemplo B" &&
+              expectedContract.StartsOn == new DateOnly(2008,1,1) &&
+              expectedContract.EndsOn == new DateOnly(2011,12,31) &&
+              expectedContract.WeeklyWage == 1700m, "full contract terms for DEMO-002");
         Check(presenter.Search("").Roster.VisiblePlayers.Count == 3, "reset to all");
         var before = presenter.Current();
         Reject<ArgumentOutOfRangeException>(()=>presenter.Search(new string('x',121)), "long query");
