@@ -4,6 +4,7 @@ on:
     paths:
       - "src/FMRTE2008.Domain/OfflinePlayerProfile.cs"
       - "src/FMRTE2008.Application/OfflineProfileQueryService.cs"
+      - "src/FMRTE2008.Application/OfflineProfilesPresenter.cs"
       - "src/FMRTE2008.Desktop/OfflineProfilesWindow.xaml"
       - "src/FMRTE2008.Desktop/OfflineProfilesWindow.xaml.cs"
       - "src/FMRTE2008.Desktop/MainWindow.xaml"
@@ -39,12 +40,17 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check WPF readonly and fictitious data behavior statically
+        run: python -m unittest discover -s tests/FMRTE2008.OfflineProfiles -p test_wpf_offline_safety.py -v
       - name: Build WPF demonstration without running game process
         run: dotnet build src/FMRTE2008.Desktop/FMRTE2008.Desktop.csproj --configuration Release
       - name: Prevent live connection additions to F26 files
         shell: pwsh
         run: |
-          $paths = @('src/FMRTE2008.Domain/OfflinePlayerProfile.cs','src/FMRTE2008.Application/OfflineProfileQueryService.cs','src/FMRTE2008.Desktop/OfflineProfilesWindow.xaml.cs')
+          $paths = @('src/FMRTE2008.Domain/OfflinePlayerProfile.cs','src/FMRTE2008.Application/OfflineProfileQueryService.cs','src/FMRTE2008.Application/OfflineProfilesPresenter.cs','src/FMRTE2008.Desktop/OfflineProfilesWindow.xaml.cs')
           foreach ($path in $paths) {
             $text = Get-Content -Raw $path
             if ($text -match 'ReadProcessMemory|WriteProcessMemory|OpenProcess\s*\(|Process\.GetProcess|DllImport|LoadLibrary') { throw "Forbidden runtime call in $path" }
