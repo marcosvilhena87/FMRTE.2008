@@ -5,10 +5,10 @@ Base `main@288aefb66aadd23842355f1ea8601c96eba48201`, com F30.1-R integrado e ap
 
 ## Protocolo determinístico
 - Projeto Windows STA separado em `tests/FMRTE2008.OfflineLifecycle.Windows`.
-- 48 janelas criadas/fechadas sequencialmente, alternando cenário básico de três perfis e adversarial de seis perfis, em três fluxos de operação: busca vazia/reset, navegação/recuperação, falha persistente/fechamento no estado indisponível.
+- 48 janelas criadas/fechadas sequencialmente em 48 threads STA isoladas, cada uma com desligamento explícito do Dispatcher, alternando cenário básico de três perfis e adversarial de seis perfis, em três fluxos de operação: busca vazia/reset, navegação/recuperação, falha persistente/fechamento no estado indisponível.
 - Verificação de identidade `DEMO-001`/`CLUB-001` em cada janela recém-criada, garantindo que um estado de falha da janela anterior não persiste em nova janela.
 - Observação explícita de uma ocorrência dos eventos `Closing` e `Closed` por ciclo e ausência de duplicação no evento do botão reset durante o ensaio.
-- Após sair do método `NoInlining` que cria/fecha a janela, guardar somente `WeakReference`; executar três rodadas de GC forçado e exigir retenção de no máximo quatro entre 48 janelas fechadas.
+- Após encerrar e fazer `Join` de cada thread STA, e sair dos métodos `NoInlining` que criam/fecham a janela, guardar somente `WeakReference`; executar três rodadas de GC forçado e exigir retenção de no máximo quatro entre 48 janelas fechadas. A primeira execução no mesmo Dispatcher manteve 48/48 referências, motivando o isolamento de Dispatcher para distinguir caches por thread de retenção de janelas.
 - A falha persistente é injetada somente pelo gancho interno de testes. Uma janela deve fechar mesmo em estado indisponível.
 
 ## Limitações interpretativas
