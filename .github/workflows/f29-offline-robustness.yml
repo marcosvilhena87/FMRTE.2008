@@ -57,7 +57,7 @@ jobs:
           )
           $f30 = 'tests/FMRTE2008.OfflineRobustness.Windows/F30Stress.cs'
           if ($paths -notcontains $f30) { throw 'F30 source absent from guard' }
-          $forbidden = 'ReadProcessMemory|WriteProcessMemory|OpenProcess\\s*\\(|Process\\.GetProcess|DllImport|LoadLibrary|File\\.WriteAllBytes|File\\.WriteAllText|Process\\.Start\\s*\\('
+          $forbidden = 'ReadProcessMemory|WriteProcessMemory|OpenProcess\s*\(|Process\.GetProcess|DllImport|LoadLibrary|File\.WriteAllBytes|File\.WriteAllText|Process\.Start\s*\('
           # Negative mutation: in-memory only. A forbidden call appended to the
           # F30 file must be recognized without writing to the workspace.
           $mutated = (Get-Content $f30 -Raw) + [Environment]::NewLine + 'ReadProcessMemory'
