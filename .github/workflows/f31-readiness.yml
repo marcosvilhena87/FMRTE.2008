@@ -27,7 +27,7 @@ jobs:
           ref: df5be0493a1ac7be57208ff0e91c2d7193dfec73
           path: _f31_sources/mapping
           persist-credentials: false
-      - name: Verify source blob hashes, semantics, 51 negative cases and governance
+      - name: Verify source blob hashes, semantics, 54 negative cases and governance
         run: |
           set -euo pipefail
           python3 tools/f31/validate_readiness.py --source-root _f31_sources/mapping --self-test --report "$RUNNER_TEMP/f31-report.json"
@@ -38,8 +38,8 @@ jobs:
           import json,sys
           x=json.load(open(sys.argv[1],encoding="utf-8"))
           assert x["result"]=="PASS" and x["criteria"]==12 and x["risks"]==8
-          assert x["negativeTests"]==51 and len(x["negativeCases"])==51
-          assert len(set(c["id"] for c in x["negativeCases"]))==51
+          assert x["negativeTests"]==54 and len(x["negativeCases"])==54
+          assert len(set(c["id"] for c in x["negativeCases"]))==54
           assert all(c["result"]=="REJECTED" for c in x["negativeCases"])
           assert len(x["sources"])==5 and all(len(s["sha256"])==64 for s in x["sources"])
           assert x["historicObservationsIndependentlyAuthenticated"] is False

@@ -428,7 +428,7 @@ def negatives(base,source_root):
         else:
             raise AssertionError(f"{label}: duplicate accepted")
         cases.append({"id":label,"result":"REJECTED","reason":"duplicate JSON key"})
-    require(len(cases)==51 and len({x["id"] for x in cases})==51, "negative case coverage")
+    require(len(cases)==54 and len({x["id"] for x in cases})==54, "negative case coverage")
     return cases
 
 def main():
