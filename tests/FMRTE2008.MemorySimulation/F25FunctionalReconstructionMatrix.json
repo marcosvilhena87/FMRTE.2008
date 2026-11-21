@@ -1,0 +1,236 @@
+{
+  "schemaVersion": 1,
+  "kind": "f25-functional-reconstruction-offline-matrix",
+  "source": {
+    "historicalExecutableSha256": "e7ba25394eb1f69fc73814a4cbe198a45a5681670f7472a07d9ba9f2a0b3fb07",
+    "catalogSha256": "ced806e946e3d08fefd2a828ad8281769f425906393bc78dfd8c9cf70d4348d9",
+    "catalogTypeCount": 100,
+    "catalogMethodCount": 1421,
+    "observedArtifacts": [
+      "src/FMRTE2008.Domain/Contracts.cs",
+      "src/FMRTE2008.Application/PlayerQuery.cs",
+      "src/FMRTE2008.Desktop/MainWindow.xaml",
+      "src/FMRTE2008.Infrastructure.Windows/VerifiedWindowsProcessOpener.cs"
+    ]
+  },
+  "architecture": {
+    "modules": [
+      "Domain",
+      "Application",
+      "Infrastructure.Windows",
+      "Desktop"
+    ],
+    "infrastructureRule": "No approved player maps; native runtime remains inaccessible",
+    "functionalityEquivalenceVerified": false
+  },
+  "rows": [
+    {
+      "id": "F25.4-01",
+      "historicalToken": "0x02000008",
+      "historicalFullName": "FMRTE.frmMain",
+      "targetModule": "Desktop",
+      "targetFile": "src/FMRTE2008.Desktop/MainWindow.xaml",
+      "rationale": "Tela principal de consulta demonstrativa",
+      "equivalenceStatus": "INFERRED",
+      "deliveryStatus": "OFFLINE_ONLY",
+      "operational": false,
+      "approved": false
+    },
+    {
+      "id": "F25.4-02",
+      "historicalToken": "0x02000005",
+      "historicalFullName": "FM_Editor.frmOptions",
+      "targetModule": "Desktop",
+      "targetFile": "src/FMRTE2008.Desktop/MainWindow.xaml",
+      "rationale": "Opções de apresentação futuras; nenhum editor live",
+      "equivalenceStatus": "INFERRED",
+      "deliveryStatus": "PROPOSED",
+      "operational": false,
+      "approved": false
+    },
+    {
+      "id": "F25.4-03",
+      "historicalToken": "0x0200002f",
+      "historicalFullName": "FMRTE.GameClasses.Player",
+      "targetModule": "Domain",
+      "targetFile": "src/FMRTE2008.Domain/Contracts.cs",
+      "rationale": "Modelo de jogador somente dados, sem offsets derivados",
+      "equivalenceStatus": "INFERRED",
+      "deliveryStatus": "PROPOSED",
+      "operational": false,
+      "approved": false
+    },
+    {
+      "id": "F25.4-04",
+      "historicalToken": "0x02000032",
+      "historicalFullName": "FMRTE.GameClasses.PlayerAttributes",
+      "targetModule": "Domain",
+      "targetFile": "src/FMRTE2008.Domain/Contracts.cs",
+      "rationale": "Vocabulário para atributos em fixtures; sem mapas",
+      "equivalenceStatus": "INFERRED",
+      "deliveryStatus": "PROPOSED",
+      "operational": false,
+      "approved": false
+    },
+    {
+      "id": "F25.4-05",
+      "historicalToken": "0x02000014",
+      "historicalFullName": "FMRTE.GameClasses.Contract",
+      "targetModule": "Domain",
+      "targetFile": "src/FMRTE2008.Domain/Contracts.cs",
+      "rationale": "Modelo de contrato exclusivamente conceitual",
+      "equivalenceStatus": "INFERRED",
+      "deliveryStatus": "PROPOSED",
+      "operational": false,
+      "approved": false
+    },
+    {
+      "id": "F25.4-06",
+      "historicalToken": "0x02000012",
+      "historicalFullName": "FMRTE.GameClasses.League",
+      "targetModule": "Domain",
+      "targetFile": "src/FMRTE2008.Domain/Contracts.cs",
+      "rationale": "Modelo conceitual de liga para dados fictícios",
+      "equivalenceStatus": "INFERRED",
+      "deliveryStatus": "PROPOSED",
+      "operational": false,
+      "approved": false
+    },
+    {
+      "id": "F25.4-07",
+      "historicalToken": "0x02000030",
+      "historicalFullName": "FMRTE.GameClasses.Players",
+      "targetModule": "Application",
+      "targetFile": "src/FMRTE2008.Application/PlayerQuery.cs",
+      "rationale": "Busca/paginação inerte por jogador",
+      "equivalenceStatus": "INFERRED",
+      "deliveryStatus": "OFFLINE_ONLY",
+      "operational": false,
+      "approved": false
+    },
+    {
+      "id": "F25.4-08",
+      "historicalToken": "0x0200003c",
+      "historicalFullName": "FMRTE.GameClasses.PlayersList",
+      "targetModule": "Application",
+      "targetFile": "src/FMRTE2008.Application/PlayerQuery.cs",
+      "rationale": "Listagem demonstrativa em snapshot",
+      "equivalenceStatus": "INFERRED",
+      "deliveryStatus": "OFFLINE_ONLY",
+      "operational": false,
+      "approved": false
+    },
+    {
+      "id": "F25.4-09",
+      "historicalToken": "0x02000017",
+      "historicalFullName": "FM_Editor.UserControls.playersPositions",
+      "targetModule": "Desktop",
+      "targetFile": "src/FMRTE2008.Desktop/MainWindow.xaml",
+      "rationale": "Seção visual futura de posições fictícias",
+      "equivalenceStatus": "INFERRED",
+      "deliveryStatus": "PROPOSED",
+      "operational": false,
+      "approved": false
+    },
+    {
+      "id": "F25.4-10",
+      "historicalToken": "0x02000042",
+      "historicalFullName": "FM_Editor.UserControls.playersAttributes",
+      "targetModule": "Desktop",
+      "targetFile": "src/FMRTE2008.Desktop/MainWindow.xaml",
+      "rationale": "Seção visual futura de atributos fictícios",
+      "equivalenceStatus": "INFERRED",
+      "deliveryStatus": "PROPOSED",
+      "operational": false,
+      "approved": false
+    },
+    {
+      "id": "F25.4-11",
+      "historicalToken": "0x0200000d",
+      "historicalFullName": "FMRTE.UserControls.leagueStandings",
+      "targetModule": "Desktop",
+      "targetFile": "src/FMRTE2008.Desktop/MainWindow.xaml",
+      "rationale": "Exibição futura de tabelas com dados sintéticos",
+      "equivalenceStatus": "INFERRED",
+      "deliveryStatus": "PROPOSED",
+      "operational": false,
+      "approved": false
+    },
+    {
+      "id": "F25.4-12",
+      "historicalToken": "0x0200000f",
+      "historicalFullName": "FM_Editor.UserControls.contractsInformation",
+      "targetModule": "Desktop",
+      "targetFile": "src/FMRTE2008.Desktop/MainWindow.xaml",
+      "rationale": "Exibição futura de informações contratuais fictícias",
+      "equivalenceStatus": "INFERRED",
+      "deliveryStatus": "PROPOSED",
+      "operational": false,
+      "approved": false
+    },
+    {
+      "id": "F25.4-13",
+      "historicalToken": "0x0200002e",
+      "historicalFullName": "FMRTE.GameClasses.PlayerInfo",
+      "targetModule": "Application",
+      "targetFile": "src/FMRTE2008.Application/PlayerQuery.cs",
+      "rationale": "Apresentação de identidade mínima em pesquisa offline",
+      "equivalenceStatus": "INFERRED",
+      "deliveryStatus": "OFFLINE_ONLY",
+      "operational": false,
+      "approved": false
+    },
+    {
+      "id": "F25.4-14",
+      "historicalToken": "0x02000037",
+      "historicalFullName": "FMRTE.GameClasses.ClubFinances",
+      "targetModule": "Domain",
+      "targetFile": "src/FMRTE2008.Domain/Contracts.cs",
+      "rationale": "Estrutura financeira conceitual; sem equivalência comprovada",
+      "equivalenceStatus": "INFERRED",
+      "deliveryStatus": "PROPOSED",
+      "operational": false,
+      "approved": false
+    },
+    {
+      "id": "F25.4-15",
+      "historicalToken": "0x02000038",
+      "historicalFullName": "FMRTE.GameClasses.Club",
+      "targetModule": "Domain",
+      "targetFile": "src/FMRTE2008.Domain/Contracts.cs",
+      "rationale": "Entidade clube somente dados",
+      "equivalenceStatus": "INFERRED",
+      "deliveryStatus": "PROPOSED",
+      "operational": false,
+      "approved": false
+    },
+    {
+      "id": "F25.4-16",
+      "historicalToken": "0x0200001f",
+      "historicalFullName": "FMRTE.GameClasses.Nation",
+      "targetModule": "Domain",
+      "targetFile": "src/FMRTE2008.Domain/Contracts.cs",
+      "rationale": "Entidade nação somente dados",
+      "equivalenceStatus": "INFERRED",
+      "deliveryStatus": "PROPOSED",
+      "operational": false,
+      "approved": false
+    }
+  ],
+  "excludedRuntime": {
+    "module": "Infrastructure.Windows",
+    "reason": "No historical class-to-native-access equivalence is asserted; only existing audited Windows abstractions may be documented",
+    "operational": false
+  },
+  "security": {
+    "NoApprovedPlayerMaps": true,
+    "approved": false,
+    "operational": false,
+    "approvedPlayerMaps": 0,
+    "b03": "PENDING-DECLARED",
+    "gateA12": "GATE-BLOQUEADO",
+    "decision": "NOT_MADE",
+    "acceptedRisks": 0,
+    "humanReviewed": false
+  }
+}

@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 1,
+  "kind": "f25-static-zip-inventory",
+  "artifact": {
+    "label": "FMRTE v1.0.0.5(1).zip",
+    "sha256": "491f15b1255fe135dfd5983520cb1a090b8edbd14511205a6f3b576b06a9c9cd",
+    "bytes": 374984,
+    "entries": 27,
+    "uncompressedBytes": 835178
+  },
+  "security": {
+    "executed": false,
+    "extracted": false,
+    "operational": false,
+    "approved": false,
+    "approvedPlayerMaps": 0,
+    "humanDecision": "NOT_MADE",
+    "b03": "PENDING-DECLARED",
+    "gateA12": "GATE-BLOQUEADO",
+    "acceptedRisks": 0
+  },
+  "entries": [
+    {
+      "path": "FMRTE v1.0.0.5/",
+      "type": "directory",
+      "bytes": 0,
+      "compressedBytes": 0,
+      "crc32": "00000000",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/config.xml",
+      "type": "xml-data",
+      "bytes": 180,
+      "compressedBytes": 126,
+      "crc32": "e10b7238",
+      "sha256": "48c4d6399a57b77ac9455b63eb7e765e69c9e70d8c5b19aeea7d19dacd664d18"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/FMRTE.exe",
+      "type": "executable-untrusted",
+      "bytes": 649728,
+      "compressedBytes": 272387,
+      "crc32": "1c208577",
+      "sha256": "e7ba25394eb1f69fc73814a4cbe198a45a5681670f7472a07d9ba9f2a0b3fb07"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/",
+      "type": "directory",
+      "bytes": 0,
+      "compressedBytes": 0,
+      "crc32": "00000000",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/",
+      "type": "directory",
+      "bytes": 0,
+      "compressedBytes": 0,
+      "crc32": "00000000",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/470_72401.jpg",
+      "type": "image-resource",
+      "bytes": 17081,
+      "compressedBytes": 14681,
+      "crc32": "d7bff37b",
+      "sha256": "707ffa72950428d923532df079e56734e4d532cdd6dc0c59c92fa00ffe94f29b"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/bugReport.png",
+      "type": "image-resource",
+      "bytes": 4423,
+      "compressedBytes": 4428,
+      "crc32": "dbdc854a",
+      "sha256": "c9835f44eef14d75ccdcde8478bf2b38cfb107fb056ca42db9098d4ff5999404"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/currentPerson-Down.png",
+      "type": "image-resource",
+      "bytes": 3675,
+      "compressedBytes": 3680,
+      "crc32": "e89d9137",
+      "sha256": "7a9d290ab54070661f948e61575258c3019b32ff742fe450adfcb107b97b4886"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/currentPerson-Hover.png",
+      "type": "image-resource",
+      "bytes": 3650,
+      "compressedBytes": 3655,
+      "crc32": "65af0252",
+      "sha256": "0712d64719bf7c6fa6f41c694c166f28e9c4ce686a60b3ae1917c643117db748"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/currentPerson-Normal.png",
+      "type": "image-resource",
+      "bytes": 3507,
+      "compressedBytes": 3512,
+      "crc32": "b498d482",
+      "sha256": "fd871aff5af432430b784006f44a7f1383def74cca275f1ae50706b5d9e5d924"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/fileclose.png",
+      "type": "image-resource",
+      "bytes": 1594,
+      "compressedBytes": 1599,
+      "crc32": "8280f04a",
+      "sha256": "775bbde00cc52eea4f4ffc64da3f2f6c2d0f9a3d9327b55c89c568560dec13b1"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/filecloseHover.png",
+      "type": "image-resource",
+      "bytes": 4921,
+      "compressedBytes": 4914,
+      "crc32": "2c48ddfd",
+      "sha256": "c8c9cbf44272f86bd074d30450a7041696e2c35f5eff7267115e811910e4356c"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/kfm_home.png",
+      "type": "image-resource",
+      "bytes": 1315,
+      "compressedBytes": 1320,
+      "crc32": "e24655c2",
+      "sha256": "402b4dd244f8f8a65e9ebf5fd8f351b06c82658371b37043fd07ea2344e87c68"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/minimize.png",
+      "type": "image-resource",
+      "bytes": 5507,
+      "compressedBytes": 5512,
+      "crc32": "77b6a40a",
+      "sha256": "948cceaf4ec079ea93838352429b093c5e3ff9b79616e22e6e1cc2c8104e424c"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/minimizeHover.png",
+      "type": "image-resource",
+      "bytes": 5634,
+      "compressedBytes": 5639,
+      "crc32": "c4c8d67c",
+      "sha256": "6b4079de2f18b017a931b591256822693ef31ac97c7ce06ae71f14d3617678c8"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/nextNode-Down.png",
+      "type": "image-resource",
+      "bytes": 3278,
+      "compressedBytes": 3283,
+      "crc32": "a65e7ae1",
+      "sha256": "60fc7b8b5bc0ea5c651a4f485329102f4ac81e4597fc2af86743418de597c4a6"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/nextNode-Hover.png",
+      "type": "image-resource",
+      "bytes": 3281,
+      "compressedBytes": 3286,
+      "crc32": "c950831c",
+      "sha256": "79298d9b0209f5b17f3ba6c49f49e7add510b58ee51c8ad01e02de7efc539566"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/nextNode.png",
+      "type": "image-resource",
+      "bytes": 3280,
+      "compressedBytes": 3285,
+      "crc32": "9b6b0651",
+      "sha256": "2162517da8840c114d4a48916cfdd3d6ab21d43b652faceaa4f54066d1775408"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/OptionsButton.png",
+      "type": "image-resource",
+      "bytes": 4583,
+      "compressedBytes": 4588,
+      "crc32": "11220954",
+      "sha256": "e5aa54d32ab6e3f07a47636544f5aa33efdc74a02c598f881d8313996712d93d"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/OptionsButtonDown.png",
+      "type": "image-resource",
+      "bytes": 4359,
+      "compressedBytes": 4364,
+      "crc32": "af05c893",
+      "sha256": "434b80bbfbb12b1552318913a4ba548c73c72c6a97d1c3e764b7ecb5a9dd9697"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/OptionsButtonHover.png",
+      "type": "image-resource",
+      "bytes": 4688,
+      "compressedBytes": 4693,
+      "crc32": "c21f15df",
+      "sha256": "804bb87790b1e6093a047803aae1098c5dc0b07b353f8a8deaca60fe0e332e3a"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/prevNode-Down.png",
+      "type": "image-resource",
+      "bytes": 3262,
+      "compressedBytes": 3267,
+      "crc32": "b3a37136",
+      "sha256": "75b3bd85dd0d1731a29d590ab1ed2e52534d7b7fbe66876fc2e1f72488c93546"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/prevNode-Hover.png",
+      "type": "image-resource",
+      "bytes": 3280,
+      "compressedBytes": 3285,
+      "crc32": "2b2fe77f",
+      "sha256": "6b0bfecbfe0fbdb91eab4a3e27ee918f392be9fb5969bf6ed9485426c1fa56b8"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/images/toolbar/prevNode.png",
+      "type": "image-resource",
+      "bytes": 3284,
+      "compressedBytes": 3289,
+      "crc32": "9691b767",
+      "sha256": "5e0fcfa9edb75b7305e1150cead9d566e46651dedb6b50313c8e361ae2eac630"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/Languages/",
+      "type": "directory",
+      "bytes": 0,
+      "compressedBytes": 0,
+      "crc32": "00000000",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/Languages/english.xml",
+      "type": "xml-data",
+      "bytes": 49817,
+      "compressedBytes": 6724,
+      "crc32": "7e52bfe6",
+      "sha256": "1b04d77083a38a27c092c01ec50a932c1da494d626924820e87c8e1ba349e98e"
+    },
+    {
+      "path": "FMRTE v1.0.0.5/Languages/portugues.xml",
+      "type": "xml-data",
+      "bytes": 50851,
+      "compressedBytes": 7301,
+      "crc32": "e6aace4f",
+      "sha256": "af8b536a33d1afb19589469d159ce44b34576124df524c0b454baf10315117aa"
+    }
+  ]
+}
