@@ -12,6 +12,7 @@ public partial class OfflineWorkspaceWindow : Window
     private bool _rendering;
     private bool _unavailable;
     private int _resetFailuresForTests;
+    private bool _persistentResetFailureForTests;
 
     public OfflineWorkspaceWindow() : this(OfflineRosterScenario.Baseline) { }
 
@@ -26,6 +27,8 @@ public partial class OfflineWorkspaceWindow : Window
     // A reset error enters a safe, non-interactive screen until an explicit retry.
     private OfflineWorkspaceState RestoreBaseline()
     {
+        if (_persistentResetFailureForTests)
+            throw new InvalidOperationException("Synthetic persistent reset failure.");
         if (_resetFailuresForTests > 0)
         {
             _resetFailuresForTests--;
@@ -106,6 +109,18 @@ public partial class OfflineWorkspaceWindow : Window
         _resetFailuresForTests = failures;
         RunSafely(() => throw new InvalidOperationException("Falha sintética antes da recuperação."));
     }
+
+    // Strictly internal test-only fault injection; cannot be enabled by the public UI.
+    // Unlike the finite counter, this remains active across any number of reset clicks.
+    internal void StartPersistentResetFailureForTests()
+    {
+        _resetFailuresForTests = 0;
+        _persistentResetFailureForTests = true;
+        RunSafely(() => throw new InvalidOperationException("Synthetic persistent failure."));
+    }
+
+    internal void StopPersistentResetFailureForTests() =>
+        _persistentResetFailureForTests = false;
 
     internal void SimulateResetClickFailureForTests()
     {
