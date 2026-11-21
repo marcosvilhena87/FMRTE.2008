@@ -1,0 +1,55 @@
+name: F31 offline mapping readiness
+on:
+  pull_request:
+    paths:
+      - "evidence/f31/**"
+      - "tools/f31/**"
+      - "docs/F31_*.md"
+      - ".github/workflows/f31-readiness.yml"
+  push:
+    paths:
+      - "evidence/f31/**"
+      - "tools/f31/**"
+      - "docs/F31_*.md"
+      - ".github/workflows/f31-readiness.yml"
+permissions:
+  contents: read
+jobs:
+  f31-offline-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch immutable research checkout (never used for operational maps)
+        uses: actions/checkout@v4
+        with:
+          repository: marcosvilhena87/FM2008.mapping
+          ref: df5be0493a1ac7be57208ff0e91c2d7193dfec73
+          path: _f31_sources/mapping
+          persist-credentials: false
+      - name: Verify source blob hashes, semantics, 54 negative cases and governance
+        run: |
+          set -euo pipefail
+          python3 tools/f31/validate_readiness.py --source-root _f31_sources/mapping --self-test --report "$RUNNER_TEMP/f31-report.json"
+          python3 tools/f31/validate_readiness.py --source-root _f31_sources/mapping --self-test --report "$RUNNER_TEMP/f31-repeat.json"
+          cmp "$RUNNER_TEMP/f31-report.json" "$RUNNER_TEMP/f31-repeat.json"
+          sha256sum "$RUNNER_TEMP/f31-report.json"
+          python3 - "$RUNNER_TEMP/f31-report.json" <<'PY'
+          import json,sys
+          x=json.load(open(sys.argv[1],encoding="utf-8"))
+          assert x["result"]=="PASS" and x["criteria"]==12 and x["risks"]==8
+          assert x["negativeTests"]==54 and len(x["negativeCases"])==54
+          assert len(set(c["id"] for c in x["negativeCases"]))==54
+          assert all(c["result"]=="REJECTED" for c in x["negativeCases"])
+          assert len(x["sources"])==5 and all(len(s["sha256"])==64 for s in x["sources"])
+          assert x["historicObservationsIndependentlyAuthenticated"] is False
+          assert x["operational"] is False and x["approved"] is False
+          assert x["humanDecision"]=="NOT_MADE" and x["wpfMode"]=="OFFLINE_ONLY"
+          PY
+      - name: Publish F31 offline readiness report
+        uses: actions/upload-artifact@v4
+        with:
+          name: f31-readiness-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/f31-report.json
+          if-no-files-found: error
+          retention-days: 30
