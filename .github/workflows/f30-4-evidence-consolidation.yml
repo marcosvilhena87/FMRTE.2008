@@ -37,6 +37,8 @@ jobs:
     name: f30-4-offline-evidence
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      F30_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
       - name: Verify pinned evidence files and fail-closed negative mutations
@@ -62,14 +64,36 @@ jobs:
           assert d["human_approval"] is None and d["decision"] == "NOT_MADE"
           assert d["approved"] is False and d["operational"] is False
           assert d["offline_historical_log_authentication"] is False
-          assert d["negative_cases_passed"] >= 30
+          assert d["negative_cases_passed"] == 46
+          assert len(d["negative_cases"]) == 46
+          assert len({case["case"] for case in d["negative_cases"]}) == 46
+          assert all(case["result"] == "REJECTED" for case in d["negative_cases"])
+          assert d["approval_state"] == "NoApprovedPlayerMaps"
+          assert d["approvedPlayerMaps"] == 0
+          assert d["B03"] == "PENDING-DECLARED" and d["A12"] == "GATE-BLOQUEADO"
+          assert set(d["risk_acceptances"]) == {f"RA-{i:02d}" for i in range(1,9)}
+          assert all(value is None for value in d["risk_acceptances"].values())
+          assert d["human_reviewer"] is None
+          assert d["human_review_timestamp"] is None
+          assert d["human_authority"] is None
+          import os, subprocess
+          e = d["execution"]
+          assert e["historicEvidenceCommit"] == d["evidence_checkout_commit"]
+          assert e["executionCheckoutSha"] == subprocess.check_output(
+              ["git", "rev-parse", "HEAD"], text=True).strip()
+          assert e["runnerEventSha"] == os.environ["GITHUB_SHA"]
+          assert e["prHeadSha"] == os.environ["F30_PR_HEAD_SHA"]
+          assert e["workflowRunId"] == int(os.environ["GITHUB_RUN_ID"])
+          assert e["workflowAttempt"] == int(os.environ["GITHUB_RUN_ATTEMPT"])
+          assert e["event"] == os.environ["GITHUB_EVENT_NAME"]
+          assert e["historicalCiReauthenticated"] is False
           assert len(d["sources"]) == 9
           assert all(len(s["sha256"]) == 64 for s in d["sources"])
           PY
       - name: Upload deterministic machine-readable SHA-256 report
         uses: actions/upload-artifact@v4
         with:
-          name: f30-offline-evidence-${{ github.sha }}
+          name: f30-offline-evidence-${{ github.run_id }}-a${{ github.run_attempt }}-${{ github.event.pull_request.head.sha || github.sha }}
           path: ${{ runner.temp }}/f30-verification.json
           if-no-files-found: error
           retention-days: 30
