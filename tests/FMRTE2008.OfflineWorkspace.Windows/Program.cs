@@ -39,7 +39,14 @@ static class WindowsSmoke
             Click("NextButton");
             Verify(players.SelectedIndex == 1, "next navigation");
             Verify(Find<TextBlock>("ClubText").Text.Contains("Clube Exemplo B"), "next club synchronized");
-            Verify(Find<TextBlock>("WageText").Text.Contains("1"), "contract fields populated");
+            Verify(Find<TextBlock>("WageText").Text ==
+                $"Salário semanal fictício: {1700m:N2} unidades",
+                "exact weekly wage with current culture");
+            Verify(Find<TextBlock>("ContractText").Text ==
+                "Contrato: 01/01/2008 a 31/12/2011",
+                "exact contract validity for Bruno");
+            Verify(Find<TextBlock>("ClubText").Text ==
+                "Clube Exemplo B (CLUB-002)", "exact club name and ID for Bruno");
             Click("PreviousButton");
             Verify(players.SelectedIndex == 0, "previous navigation");
             search.Text = "Caio";
@@ -49,6 +56,20 @@ static class WindowsSmoke
             Click("ClubButton");
             Verify(players.Items.Count == 1 && Find<TextBlock>("ClubText").Text.Contains("Clube Exemplo C"),
                 "club navigation");
+            Verify(search.Text == "CLUB-003",
+                "club navigation updates visible query to exact ID");
+            Click("SearchButton");
+            Verify(players.Items.Count == 1 && players.SelectedIndex == 0 &&
+                   Find<TextBlock>("ClubText").Text == "Clube Exemplo C (CLUB-003)",
+                "re-search of displayed ID keeps same club");
+            search.Text = "CLUB-00";
+            Click("SearchButton");
+            Verify(players.Items.Count == 3,
+                "partial club ID is text search only, not exact club navigation");
+            search.Text = "CLUB-999";
+            Click("SearchButton");
+            Verify(players.Items.Count == 0, "unknown club ID yields no records");
+
             search.Text = "não existe";
             Click("SearchButton");
             Verify(players.Items.Count == 0 && players.SelectedIndex == -1, "empty grid");
