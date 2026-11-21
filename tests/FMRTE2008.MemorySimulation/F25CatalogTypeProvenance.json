@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "kind": "f25-catalog-type-provenance-offline",
+  "sourceCatalogSha256": "ced806e946e3d08fefd2a828ad8281769f425906393bc78dfd8c9cf70d4348d9",
+  "sourceExecutableSha256": "e7ba25394eb1f69fc73814a4cbe198a45a5681670f7472a07d9ba9f2a0b3fb07",
+  "sourceZipSha256": "491f15b1255fe135dfd5983520cb1a090b8edbd14511205a6f3b576b06a9c9cd",
+  "sourceCatalogTypeCount": 100,
+  "derivation": "TypeDef token namespace name from F25.3 catalog; not an attestation of historical provenance",
+  "types": [
+    {
+      "token": "0x02000008",
+      "fullName": "FMRTE.frmMain"
+    },
+    {
+      "token": "0x02000005",
+      "fullName": "FM_Editor.frmOptions"
+    },
+    {
+      "token": "0x0200002f",
+      "fullName": "FMRTE.GameClasses.Player"
+    },
+    {
+      "token": "0x02000032",
+      "fullName": "FMRTE.GameClasses.PlayerAttributes"
+    },
+    {
+      "token": "0x02000014",
+      "fullName": "FMRTE.GameClasses.Contract"
+    },
+    {
+      "token": "0x02000012",
+      "fullName": "FMRTE.GameClasses.League"
+    },
+    {
+      "token": "0x02000030",
+      "fullName": "FMRTE.GameClasses.Players"
+    },
+    {
+      "token": "0x0200003c",
+      "fullName": "FMRTE.GameClasses.PlayersList"
+    },
+    {
+      "token": "0x02000017",
+      "fullName": "FM_Editor.UserControls.playersPositions"
+    },
+    {
+      "token": "0x02000042",
+      "fullName": "FM_Editor.UserControls.playersAttributes"
+    },
+    {
+      "token": "0x0200000d",
+      "fullName": "FMRTE.UserControls.leagueStandings"
+    },
+    {
+      "token": "0x0200000f",
+      "fullName": "FM_Editor.UserControls.contractsInformation"
+    },
+    {
+      "token": "0x0200002e",
+      "fullName": "FMRTE.GameClasses.PlayerInfo"
+    },
+    {
+      "token": "0x02000037",
+      "fullName": "FMRTE.GameClasses.ClubFinances"
+    },
+    {
+      "token": "0x02000038",
+      "fullName": "FMRTE.GameClasses.Club"
+    },
+    {
+      "token": "0x0200001f",
+      "fullName": "FMRTE.GameClasses.Nation"
+    }
+  ],
+  "security": {
+    "approved": false,
+    "operational": false,
+    "humanDecision": "NOT_MADE"
+  }
+}
