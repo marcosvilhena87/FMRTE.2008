@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -15,6 +16,53 @@ static class F30NativeWindows
     private const int Cycles = 48;
     private static int assertions;
     private static int postCloseCallbacks;
+    private readonly record struct ResourceSnapshot(int Handles, int Gdi, int User);
+
+    // Strictly local Win32 diagnostics: own test process and own HWND.
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint GetGuiResources(IntPtr ownProcessHandle, uint kind);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool IsWindow(IntPtr hwnd);
+
+    private static ResourceSnapshot Snapshot()
+    {
+        using var self = Process.GetCurrentProcess();
+        self.Refresh();
+        return new ResourceSnapshot(
+            self.HandleCount,
+            checked((int)GetGuiResources(self.Handle, 0u)),
+            checked((int)GetGuiResources(self.Handle, 1u)));
+    }
+
+    // Same criterion for real F30.3 measurements and the leak control.
+    private static bool StableLast24(int after24, int after48) =>
+        after48 - after24 <= 8;
+
+    private static void NegativeLeakControl()
+    {
+        var deliberatelyRetained = new List<EventWaitHandle>(48);
+        try
+        {
+            for (int i = 0; i < 24; i++)
+                deliberatelyRetained.Add(new EventWaitHandle(false, EventResetMode.ManualReset));
+            int after24 = Snapshot().Handles;
+            for (int i = 0; i < 24; i++)
+                deliberatelyRetained.Add(new EventWaitHandle(false, EventResetMode.ManualReset));
+            int after48 = Snapshot().Handles;
+            Check(after48 - after24 >= 20, -1,
+                "negative control must create real handles owned by this test process");
+            Check(!StableLast24(after24, after48), -1,
+                "one leaked handle per cycle MUST fail the production trend predicate");
+            Console.WriteLine($"F30.3 NEGATIVE PASS: own handles +{after48 - after24} over 24 leak cycles; detector rejects");
+        }
+        finally
+        {
+            foreach (var handle in deliberatelyRetained) handle.Dispose();
+            Collect();
+        }
+    }
 
     private static void Check(bool value, int cycle, string name)
     {
@@ -69,6 +117,7 @@ static class F30NativeWindows
         window.Closing += (_, e) => { closing++; Check(!e.Cancel, cycle, "Closing is not cancelled"); };
         window.Closed += (_, _) => closed++;
         HwndSource? nativeSource = null;
+        IntPtr originalHwnd = IntPtr.Zero;
         try
         {
             window.Show();
@@ -77,6 +126,9 @@ static class F30NativeWindows
             Check(window.IsVisible && window.IsLoaded, cycle, "real WPF window displayed and loaded");
             Check(nativeSource is not null && nativeSource.Handle != IntPtr.Zero,
                 cycle, "nonzero native HWND created for displayed window");
+            originalHwnd = nativeSource!.Handle;
+            Check(IsWindow(originalHwnd), cycle,
+                "Win32 independently confirms live HWND of the fictional WPF window");
             var grid = Find<DataGrid>(window, "PlayersGrid");
             Check(grid.Items.Count == expected &&
                   ((OfflineExpandedPlayer?)grid.SelectedItem)?.Profile.DemonstrationId == "DEMO-001",
@@ -124,6 +176,8 @@ static class F30NativeWindows
             cycle, "visible window closes once and is no longer visible");
         Check(nativeSource is not null && nativeSource.Handle == IntPtr.Zero,
             cycle, "native HWND released after Close");
+        Check(originalHwnd != IntPtr.Zero && !IsWindow(originalHwnd), cycle,
+            "Win32 independently confirms original HWND destroyed after Close");
 
         int afterCloseResets = window.ResetInvocationsForTests;
         Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background,
@@ -140,47 +194,75 @@ static class F30NativeWindows
     [STAThread]
     private static void Main()
     {
-        // A single WPF UI Dispatcher remains alive through all 48 visible windows.
-        // Bounds are conservative regression budgets, not native leak proofs.
-        // Account for one-time WPF compositor/Dispatcher initialization.
-        // Warm-up windows use only closed synthetic fixtures and are excluded
-        // from the 48 measured cycles. Preserve all original resource budgets.
-        _ = ShowExerciseClose(-2);
-        _ = ShowExerciseClose(-1);
+        // Negative detection exercise runs before either baseline and disposes
+        // all of its own local event handles afterwards.
+        NegativeLeakControl();
         Collect();
-        Check(postCloseCallbacks == 2, -1, "both warm-up post-close callbacks drained");
+        var raw = Snapshot();
+        Console.WriteLine($"F30.3 RAW handles={raw.Handles} gdi={raw.Gdi} user={raw.User}");
+        ResourceSnapshot previous = raw, baseline = raw;
+        int stableConsecutive = 0, warmed = 0;
+        // Warm up in pairs, require two successive stable resource groups,
+        // and fail within eight pairs instead of changing the budget.
+        for (int group = 0; group < 8; group++)
+        {
+            _ = ShowExerciseClose(-100 - group * 2);
+            _ = ShowExerciseClose(-101 - group * 2);
+            warmed += 2;
+            Collect();
+            baseline = Snapshot();
+            int dh = baseline.Handles - previous.Handles;
+            int dg = baseline.Gdi - previous.Gdi;
+            int du = baseline.User - previous.User;
+            bool stable = Math.Abs(dh) <= 8 && Math.Abs(dg) <= 4 && Math.Abs(du) <= 4;
+            stableConsecutive = stable ? stableConsecutive + 1 : 0;
+            Console.WriteLine($"F30.3 WARMUP windows={warmed} handles={baseline.Handles} gdi={baseline.Gdi} user={baseline.User} delta=({dh},{dg},{du}) stableGroups={stableConsecutive}");
+            Check(postCloseCallbacks == warmed, -1, "all warm-up callbacks must be drained");
+            if (stableConsecutive >= 2) break;
+            previous = baseline;
+        }
+        Check(stableConsecutive >= 2, -1, "warm-up resources did not stabilize");
         postCloseCallbacks = 0;
-        int baselineHandles = OwnProcessHandles();
-        Console.WriteLine($"F30.3 WARMUP baselineHandles={baselineHandles}");
         long baselineManaged = GC.GetTotalMemory(forceFullCollection: true);
         var windows = new List<WeakReference<OfflineWorkspaceWindow>>(Cycles);
-        int maxHandles = baselineHandles, maxRetained = 0;
+        var checkpoints = new List<ResourceSnapshot>();
+        int maxRetained = 0;
         long maxManagedGrowth = 0;
         for (int i = 0; i < Cycles; i++)
         {
             windows.Add(ShowExerciseClose(i));
             if ((i + 1) % 8 != 0) continue;
             Collect();
+            var now = Snapshot();
+            checkpoints.Add(now);
             int held = windows.Count(w => w.TryGetTarget(out _));
-            int handles = OwnProcessHandles();
             long heapDelta = GC.GetTotalMemory(forceFullCollection: true) - baselineManaged;
-            maxHandles = Math.Max(maxHandles, handles);
             maxRetained = Math.Max(maxRetained, held);
             maxManagedGrowth = Math.Max(maxManagedGrowth, heapDelta);
-            Console.WriteLine($"F30.3 checkpoint={i + 1} held={held} handles={handles} deltaHandles={handles - baselineHandles} managedDeltaBytes={heapDelta}");
-            Check(postCloseCallbacks == i + 1, i, "each queued post-close callback ran exactly once");
-            Check(held <= 4, i, "closed visible windows remain collectable on shared Dispatcher");
-            Check(handles <= baselineHandles + 128, i, "own-process handle growth exceeds budget of 128");
-            Check(heapDelta <= 64L * 1024 * 1024, i, "managed heap growth exceeds budget of 64 MiB");
+            Console.WriteLine($"F30.3 checkpoint={i + 1} held={held} handles={now.Handles} gdi={now.Gdi} user={now.User} deltaHandles={now.Handles - baseline.Handles} rawDeltaHandles={now.Handles - raw.Handles} deltaGdi={now.Gdi - baseline.Gdi} deltaUser={now.User - baseline.User} managedDeltaBytes={heapDelta}");
+            Check(postCloseCallbacks == i + 1, i, "each post-close callback ran exactly once");
+            Check(held <= 4, i, "closed displayed windows remain collectible");
+            Check(now.Handles <= baseline.Handles + 128, i, "own-process handles exceed +128");
+            Check(now.Gdi <= baseline.Gdi + 16 && now.User <= baseline.User + 16, i,
+                "own-process GDI/USER exceeds +16");
+            Check(heapDelta <= 64L * 1024 * 1024, i, "managed heap exceeds +64 MiB");
             Check(!Dispatcher.CurrentDispatcher.HasShutdownStarted, i,
-                "shared Dispatcher remains active through native resource measurements");
+                "shared Dispatcher remains alive");
+            if (i + 1 == Cycles)
+            {
+                Check(StableLast24(checkpoints[2].Handles, now.Handles), i,
+                    "last 24 windows grew more than 8 handles: progressive leak");
+                Check(now.Gdi - checkpoints[2].Gdi <= 4 && now.User - checkpoints[2].User <= 4,
+                    i, "last 24 windows grew more than 4 GDI or USER objects");
+            }
         }
         Collect();
         int finalRetained = windows.Count(w => w.TryGetTarget(out _));
-        int finalHandles = OwnProcessHandles();
-        Check(finalRetained <= 4, Cycles, "final weak-reference retention budget");
-        Check(finalHandles <= baselineHandles + 64, Cycles,
-            "final own-process handle growth exceeds budget of 64");
-        Console.WriteLine($"F30.3 WPF PASS: {Cycles} visible native HWND cycles, {assertions} assertions, peakRetained={maxRetained}, finalRetained={finalRetained}, baselineHandles={baselineHandles}, peakHandles={maxHandles}, finalHandles={finalHandles}, peakManagedGrowthBytes={maxManagedGrowth}; synthetic current process only");
+        var final = Snapshot();
+        Check(finalRetained <= 4, Cycles, "final weak-reference budget");
+        Check(final.Handles <= baseline.Handles + 64, Cycles, "final handles exceed +64");
+        Check(final.Gdi <= baseline.Gdi + 16 && final.User <= baseline.User + 16,
+            Cycles, "final GDI/USER budget");
+        Console.WriteLine($"F30.3 WPF PASS: {Cycles} visible native HWND cycles, {assertions} assertions, warmupWindows={warmed}, peakRetained={maxRetained}, finalRetained={finalRetained}, rawHandles={raw.Handles}, baselineHandles={baseline.Handles}, finalHandles={final.Handles}, rawGdi={raw.Gdi}, baselineGdi={baseline.Gdi}, finalGdi={final.Gdi}, rawUser={raw.User}, baselineUser={baseline.User}, finalUser={final.User}, peakManagedGrowthBytes={maxManagedGrowth}; synthetic current process only");
     }
 }
