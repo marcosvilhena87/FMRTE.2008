@@ -1,0 +1,58 @@
+name: F27 offline roster and clubs
+on:
+  push:
+    paths:
+      - "src/FMRTE2008.Domain/OfflineExpandedRoster.cs"
+      - "src/FMRTE2008.Domain/OfflineAttributeCategoryCatalog.cs"
+      - "src/FMRTE2008.Application/OfflineRosterPresenter.cs"
+      - "src/FMRTE2008.Desktop/OfflineRosterWindow.xaml"
+      - "src/FMRTE2008.Desktop/OfflineRosterWindow.xaml.cs"
+      - "src/FMRTE2008.Desktop/MainWindow.xaml"
+      - "src/FMRTE2008.Desktop/MainWindow.xaml.cs"
+      - "tests/FMRTE2008.OfflineRoster/**"
+      - ".github/workflows/f27-offline-roster.yml"
+  pull_request:
+    paths:
+      - "src/FMRTE2008.Domain/OfflineExpandedRoster.cs"
+      - "src/FMRTE2008.Domain/OfflineAttributeCategoryCatalog.cs"
+      - "src/FMRTE2008.Application/OfflineRosterPresenter.cs"
+      - "src/FMRTE2008.Desktop/OfflineRosterWindow.xaml"
+      - "src/FMRTE2008.Desktop/OfflineRosterWindow.xaml.cs"
+      - "src/FMRTE2008.Desktop/MainWindow.xaml"
+      - "src/FMRTE2008.Desktop/MainWindow.xaml.cs"
+      - "tests/FMRTE2008.OfflineRoster/**"
+      - ".github/workflows/f27-offline-roster.yml"
+permissions:
+  contents: read
+jobs:
+  f27-domain-navigation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Deterministic synthetic navigation, contracts and immutability checks
+        run: dotnet run --project tests/FMRTE2008.OfflineRoster/FMRTE2008.OfflineRoster.csproj --configuration Release
+  f27-desktop:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Static XAML and safety assertions
+        run: python -m unittest discover -s tests/FMRTE2008.OfflineRoster -p test_f27_xaml_safety.py -v
+      - name: Compile WPF only without launching FM2008
+        run: dotnet build src/FMRTE2008.Desktop/FMRTE2008.Desktop.csproj --configuration Release
+      - name: No native process APIs in F27 source files
+        shell: pwsh
+        run: |
+          $paths = @('src/FMRTE2008.Domain/OfflineExpandedRoster.cs','src/FMRTE2008.Domain/OfflineAttributeCategoryCatalog.cs','src/FMRTE2008.Application/OfflineRosterPresenter.cs','src/FMRTE2008.Desktop/OfflineRosterWindow.xaml.cs')
+          foreach ($path in $paths) {
+            $source = Get-Content $path -Raw
+            if ($source -match 'ReadProcessMemory|WriteProcessMemory|OpenProcess\s*\(|Process\.GetProcess|DllImport|LoadLibrary') { throw "Forbidden process usage in $path" }
+          }
