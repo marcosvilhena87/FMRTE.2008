@@ -52,12 +52,21 @@ static class F30Stress
                 iteration, "displayed club ID must match selected row exactly");
             // A synthetic profile may legitimately lack a category. Compare
             // each rendered grid with its specific selected fixture, not > 0.
-            Check(!string.IsNullOrEmpty(contract.Text) &&
-                !string.IsNullOrEmpty(wage.Text) &&
-                technical.Items.Count == row!.AttributesFor(OfflineAttributeCategory.Technical).Count &&
-                mental.Items.Count == row!.AttributesFor(OfflineAttributeCategory.Mental).Count &&
-                physical.Items.Count == row!.AttributesFor(OfflineAttributeCategory.Physical).Count,
-                iteration, "attribute categories match the selected fixture exactly");
+            var selected = row!;
+            Check(player.Text == $"{selected.Profile.DisplayName} • {selected.Profile.Position} ({expectedPlayerId})" &&
+                club.Text == $"{selected.Club.Name} ({expectedClubId})" &&
+                city.Text == $"{selected.Club.City} — {selected.Club.Country}",
+                iteration, "full selected player and club labels match the fixture");
+            Check(contract.Text == $"Contrato: {selected.Profile.Contract.StartsOn:dd/MM/yyyy} a {selected.Profile.Contract.EndsOn:dd/MM/yyyy}" &&
+                wage.Text == $"Salário semanal fictício: {selected.Profile.Contract.WeeklyWage:N2} unidades",
+                iteration, "contract and wage belong to exact selected ID");
+            Check(technical.Items.Cast<OfflineAttribute>().SequenceEqual(
+                      selected.AttributesFor(OfflineAttributeCategory.Technical)) &&
+                  mental.Items.Cast<OfflineAttribute>().SequenceEqual(
+                      selected.AttributesFor(OfflineAttributeCategory.Mental)) &&
+                  physical.Items.Cast<OfflineAttribute>().SequenceEqual(
+                      selected.AttributesFor(OfflineAttributeCategory.Physical)),
+                iteration, "every displayed attribute matches the selected fixture");
         }
 
         void Empty(int iteration)
