@@ -31,7 +31,7 @@
       "targetModule": "Desktop",
       "targetFile": "src/FMRTE2008.Desktop/MainWindow.xaml",
       "rationale": "Tela principal de consulta demonstrativa",
-      "equivalenceStatus": "OBSERVED",
+      "equivalenceStatus": "INFERRED",
       "deliveryStatus": "OFFLINE_ONLY",
       "operational": false,
       "approved": false
