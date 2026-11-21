@@ -1,0 +1,146 @@
+{
+  "schema": "f30-offline-evidence/v1",
+  "repository": "marcosvilhena87/FMRTE.2008",
+  "evidence_checkout_commit": "c2c379b3cbec38f393eea41ffdbd431a1e0a021c",
+  "source_files": [
+    {
+      "path": "tests/FMRTE2008.OfflineRobustness.Windows/F30Stress.cs",
+      "git_blob_sha1": "730d2f62da91ab754453e2666864e7dec1f87832"
+    },
+    {
+      "path": "tests/FMRTE2008.OfflineLifecycle.Windows/Program.cs",
+      "git_blob_sha1": "749e7d6165a9858c68358993f8ac22fff91b6186"
+    },
+    {
+      "path": "tests/FMRTE2008.OfflineNativeWindows/Program.cs",
+      "git_blob_sha1": "12a87d2f78f096645c95657609d878b1c5c0f09f"
+    },
+    {
+      "path": "docs/F30_1_OFFLINE_WPF_STRESS.md",
+      "git_blob_sha1": "24cc1447bb781d8c4c4d99dc1b8ea092ffc6779b"
+    },
+    {
+      "path": "docs/F30_2_WPF_LIFECYCLE.md",
+      "git_blob_sha1": "35aaa769e377a3068716e134eef411a316178fc9"
+    },
+    {
+      "path": "docs/F30_3_VISIBLE_WPF_RESOURCES.md",
+      "git_blob_sha1": "cc4019fcb5a61b4c8b867dfbda92a68b5df478f8"
+    },
+    {
+      "path": ".github/workflows/f29-offline-robustness.yml",
+      "git_blob_sha1": "f1d9a9e0d599dd9e109651d620772e3c5290eccc"
+    },
+    {
+      "path": ".github/workflows/f30-2-offline-wpf-lifecycle.yml",
+      "git_blob_sha1": "915c443bc0a83a9cf849482083e22a027da05ad1"
+    },
+    {
+      "path": ".github/workflows/f30-3-offline-native-wpf.yml",
+      "git_blob_sha1": "77b98e5b5487ddb233c26302f59588644cca7014"
+    }
+  ],
+  "stages": [
+    {
+      "stage": "F30.1",
+      "merged_pr": 32,
+      "merge_commit": "288aefb66aadd23842355f1ea8601c96eba48201",
+      "main_revalidation_run": 44926965311,
+      "windows_job": 136915058846,
+      "expected_line": "F30.1 WPF PASS: 120 deterministic cycles, 5532 assertions, 3 schedules and 12 persistent failures",
+      "cycles": 120,
+      "assertions": 5532,
+      "synthetic": true
+    },
+    {
+      "stage": "F30.2",
+      "merged_pr": 33,
+      "merge_commit": "923fb99cea1b37526a78124dd8fb54f237160346",
+      "main_revalidation_run": 44926965354,
+      "windows_job": 136915058961,
+      "expected_line": "F30.2 WPF PASS: 48 isolated + 48 shared created/closed, 986 assertions; synthetic STA only",
+      "cycles": 96,
+      "assertions": 986,
+      "synthetic": true
+    },
+    {
+      "stage": "F30.3",
+      "merged_pr": 34,
+      "merge_commit": "c2c379b3cbec38f393eea41ffdbd431a1e0a021c",
+      "main_revalidation_run": 44926965330,
+      "windows_job": 136915058988,
+      "expected_line": "F30.3 WPF PASS: 96 visible native HWND cycles, 1307 assertions, warmupWindows=6, peakRetained=0, finalRetained=0, rawHandles=265, baselineHandles=441, finalHandles=455, rawGdi=0, baselineGdi=22, finalGdi=22, rawUser=3, baselineUser=23, finalUser=28, peakManagedGrowthBytes=663320; synthetic current process only",
+      "cycles": 96,
+      "assertions": 1307,
+      "synthetic": true
+    }
+  ],
+  "ci_runs": [
+    {
+      "run_id": 44926965354,
+      "workflow": "F30.2 offline WPF lifecycle",
+      "conclusion": "success"
+    },
+    {
+      "run_id": 44926965339,
+      "workflow": "Compilar diagnóstico somente leitura",
+      "conclusion": "success"
+    },
+    {
+      "run_id": 44926965342,
+      "workflow": "Testes do leitor x86",
+      "conclusion": "success"
+    },
+    {
+      "run_id": 44926965373,
+      "workflow": "Compilar protótipo Windows",
+      "conclusion": "success"
+    },
+    {
+      "run_id": 44926965311,
+      "workflow": "F29 offline robustness",
+      "conclusion": "success"
+    },
+    {
+      "run_id": 44926965330,
+      "workflow": "F30.3 offline displayed WPF native resources",
+      "conclusion": "success"
+    },
+    {
+      "run_id": 44926965363,
+      "workflow": "Simulacao de memoria x86",
+      "conclusion": "success"
+    }
+  ],
+  "governance": {
+    "mapping_unchanged_commit": "df5be0493a1ac7be57208ff0e91c2d7193dfec73",
+    "approval_state": "NoApprovedPlayerMaps",
+    "approved": false,
+    "operational": false,
+    "approvedPlayerMaps": 0,
+    "B03": "PENDING-DECLARED",
+    "A12": "GATE-BLOQUEADO",
+    "decision": "NOT_MADE",
+    "risk_acceptances": {
+      "RA-01": null,
+      "RA-02": null,
+      "RA-03": null,
+      "RA-04": null,
+      "RA-05": null,
+      "RA-06": null,
+      "RA-07": null,
+      "RA-08": null
+    },
+    "human_reviewer": null,
+    "human_review_timestamp": null,
+    "human_authority": null,
+    "human_approval": null
+  },
+  "evidence_limitations": [
+    "Os IDs e trechos de log são referências históricas; a validação offline NÃO consulta a API do GitHub nem autentica retroativamente os logs.",
+    "SHA-1 Git blob identifica bytes dos nove arquivos; o relatório calcula SHA-256 desses mesmos arquivos no checkout atual.",
+    "Os testes usam dados fictícios. Não executam fm.exe, consultam mapas operacionais, memória do jogo, offsets ou saves.",
+    "Aprovação de CI e merge de PR NÃO são autorização humana; nenhuma decisão operacional foi tomada.",
+    "Os 96 ciclos F30.3 e medidas do processo de teste não demonstram ausência universal de vazamentos nativos, COM ou GPU."
+  ]
+}
