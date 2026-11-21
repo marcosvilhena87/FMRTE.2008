@@ -21,3 +21,11 @@
 - Permanecem `NoApprovedPlayerMaps`, `approved=false`, `operational=false`, `approvedPlayerMaps=0`, `B03=PENDING-DECLARED`, `A12=GATE-BLOQUEADO`, `decision=NOT_MADE` e os oito riscos RA-01–RA-08 sem aceite.
 - Sem acesso à memória, escrita, ligação live com o Football Manager, alteração de save ou execução de binário legado.
 - O PR deverá permanecer **Draft** até revisão técnica independente e reconfirmação do HEAD/CI.
+
+## F28-R — Remediação pós-revisão independente #6006309393
+- **R01 — Filtragem exata:** `OfflineRosterPresenter.FilterByClubId` seleciona exclusivamente registros cujo `Club.DemonstrationId` corresponde exatamente ao ID fornecido. `OfflineWorkspacePresenter.ShowClub` continua exigindo que o clube esteja no resultado visível atual, mas usa agora o filtro por ID, não a pesquisa textual por nome. Não há novos provedores ou fontes de dados.
+- **R02 — Testes contratuais:** o smoke WPF Windows confere salário inteiro formatado segundo a cultura atual, datas de início e fim e nome/ID completos do clube. Testes de domínio verificam também os valores tipados do contrato fictício.
+- **R03 — Busca sincronizada:** ao abrir o clube na interface, `QueryBox.Text` recebe o identificador fictício `CLUB-NNN`. A pesquisa textual reconhece esse ID; pressionar Pesquisar outra vez reproduz o mesmo resultado. Testes Windows exercitam o botão Clube e a pesquisa repetida.
+- **Regressões adversariais:** IDs incompletos, desconhecidos, com espaços ou nulos não são aceitos como filtro exato. Os caminhos de `push` e `pull_request` do workflow F28 permanecem simétricos e agora incluem `OfflineRosterPresenter.cs`.
+- **Limites:** a pesquisa textual ainda aceita substrings por intenção; somente a navegação explícita por clube exige identidade exata. Os testes Windows são de componentes WPF em processo STA, não validação por screenshot ou usuário real.
+- **Governança:** nenhuma autorização humana, mapa aprovado, conexão operacional, escrita ou modificação de `FM2008.mapping` é implicada. PR #30 fica em Draft até a revisão final.
