@@ -142,8 +142,16 @@ static class F30NativeWindows
     {
         // A single WPF UI Dispatcher remains alive through all 48 visible windows.
         // Bounds are conservative regression budgets, not native leak proofs.
+        // Account for one-time WPF compositor/Dispatcher initialization.
+        // Warm-up windows use only closed synthetic fixtures and are excluded
+        // from the 48 measured cycles. Preserve all original resource budgets.
+        _ = ShowExerciseClose(-2);
+        _ = ShowExerciseClose(-1);
         Collect();
+        Check(postCloseCallbacks == 2, -1, "both warm-up post-close callbacks drained");
+        postCloseCallbacks = 0;
         int baselineHandles = OwnProcessHandles();
+        Console.WriteLine($"F30.3 WARMUP baselineHandles={baselineHandles}");
         long baselineManaged = GC.GetTotalMemory(forceFullCollection: true);
         var windows = new List<WeakReference<OfflineWorkspaceWindow>>(Cycles);
         int maxHandles = baselineHandles, maxRetained = 0;
