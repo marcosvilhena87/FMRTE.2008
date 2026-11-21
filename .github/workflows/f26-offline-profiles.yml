@@ -40,7 +40,7 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - name: Build WPF demonstration without running game process
-        run: dotnet build src/FMRTE2008.Desktop/FMRTE2008.Desktop.csproj --configuration Release --no-restore false
+        run: dotnet build src/FMRTE2008.Desktop/FMRTE2008.Desktop.csproj --configuration Release
       - name: Prevent live connection additions to F26 files
         shell: pwsh
         run: |
