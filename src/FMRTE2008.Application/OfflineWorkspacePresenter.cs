@@ -21,10 +21,13 @@ public sealed record OfflineWorkspaceState(
 /// </summary>
 public sealed class OfflineWorkspacePresenter
 {
-    private readonly OfflineRosterPresenter _roster = new();
+    private readonly OfflineRosterPresenter _roster;
 
-    public OfflineWorkspacePresenter()
+    public OfflineWorkspacePresenter() : this(OfflineRosterScenario.Baseline) { }
+
+    internal OfflineWorkspacePresenter(OfflineRosterScenario scenario)
     {
+        _roster = new OfflineRosterPresenter(scenario);
         _roster.Search("");
     }
 

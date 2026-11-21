@@ -8,44 +8,139 @@ namespace FMRTE2008.Desktop;
 /// <summary>All displayed information originates from closed, invented F28 fixtures.</summary>
 public partial class OfflineWorkspaceWindow : Window
 {
-    private readonly OfflineWorkspacePresenter _presenter = new();
+    private readonly OfflineWorkspacePresenter _presenter;
     private bool _rendering;
+    private bool _unavailable;
+    private int _resetFailuresForTests;
 
-    public OfflineWorkspaceWindow()
+    public OfflineWorkspaceWindow() : this(OfflineRosterScenario.Baseline) { }
+
+    internal OfflineWorkspaceWindow(OfflineRosterScenario scenario)
     {
+        _presenter = new OfflineWorkspacePresenter(scenario);
         InitializeComponent();
-        Render(_presenter.Search(""));
+        Render(_presenter.Current());
+    }
+
+    // One-shot recovery: never call RunSafely from its own catch block.
+    // A reset error enters a safe, non-interactive screen until an explicit retry.
+    private OfflineWorkspaceState RestoreBaseline()
+    {
+        if (_resetFailuresForTests > 0)
+        {
+            _resetFailuresForTests--;
+            throw new InvalidOperationException("Synthetic reset failure.");
+        }
+        var result = _presenter.Search("");
+        QueryBox.Clear();
+        return result;
+    }
+
+    private void RunSafely(Func<OfflineWorkspaceState> action, bool isReset = false)
+    {
+        if (_unavailable && !isReset) return;
+        try
+        {
+            Render(action());
+            _unavailable = false;
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            if (!isReset)
+            {
+                try
+                {
+                    // Exactly one restoration attempt; never reenter this method.
+                    Render(RestoreBaseline());
+                    _unavailable = false;
+                    StatusText.Text = "Falha na demonstração recuperada; filtro e seleção reiniciados.";
+                    return;
+                }
+                catch (Exception resetException) when
+                    (resetException is ArgumentException or InvalidOperationException)
+                {
+                    // No repeated attempts inside the same UI action.
+                }
+            }
+            ShowUnavailable();
+        }
+    }
+
+    private void ShowUnavailable()
+    {
+        _unavailable = true;
+        _rendering = true;
+        try
+        {
+            QueryBox.Clear();
+            PlayersGrid.ItemsSource = Array.Empty<OfflineExpandedPlayer>();
+            PlayersGrid.SelectedIndex = -1;
+            TechnicalGrid.ItemsSource = Array.Empty<OfflineAttribute>();
+            MentalGrid.ItemsSource = Array.Empty<OfflineAttribute>();
+            PhysicalGrid.ItemsSource = Array.Empty<OfflineAttribute>();
+            PlayerText.Text = "Demonstração temporariamente indisponível.";
+            ClubText.Text = "";
+            CityCountryText.Text = "";
+            ContractText.Text = "";
+            WageText.Text = "";
+            ClubMembersText.Text = "";
+            StatusText.Text = "Falha na restauração offline. Use Mostrar todos para tentar novamente.";
+            QueryBox.IsEnabled = false;
+            SearchButton.IsEnabled = false;
+            PlayersGrid.IsEnabled = false;
+            PreviousButton.IsEnabled = false;
+            NextButton.IsEnabled = false;
+            ClubButton.IsEnabled = false;
+            ResetButton.IsEnabled = true;
+        }
+        finally { _rendering = false; }
+    }
+
+    internal void SimulateRecoverableFailureForTests() =>
+        RunSafely(() => throw new InvalidOperationException("Falha sintética de teste."));
+
+    internal void SimulateResetFailureForTests(int failures)
+    {
+        if (failures is < 1 or > 2)
+            throw new ArgumentOutOfRangeException(nameof(failures));
+        _resetFailuresForTests = failures;
+        RunSafely(() => throw new InvalidOperationException("Falha sintética antes da recuperação."));
+    }
+
+    internal void SimulateResetClickFailureForTests()
+    {
+        _resetFailuresForTests = 1;
+        Reset_Click(this, new RoutedEventArgs());
     }
 
     private void Search_Click(object sender, RoutedEventArgs e) =>
-        Render(_presenter.Search(QueryBox.Text));
+        RunSafely(() => _presenter.Search(QueryBox.Text));
 
-    private void Reset_Click(object sender, RoutedEventArgs e)
-    {
-        QueryBox.Clear();
-        Render(_presenter.Search(""));
-    }
+    private void Reset_Click(object sender, RoutedEventArgs e) =>
+        RunSafely(RestoreBaseline, isReset: true);
 
     private void Next_Click(object sender, RoutedEventArgs e) =>
-        Render(_presenter.NextPlayer());
+        RunSafely(() => _presenter.NextPlayer());
 
     private void Previous_Click(object sender, RoutedEventArgs e) =>
-        Render(_presenter.PreviousPlayer());
+        RunSafely(() => _presenter.PreviousPlayer());
 
     private void Club_Click(object sender, RoutedEventArgs e)
     {
-        var clubId = _presenter.Current().SelectedClub?.DemonstrationId;
-        var view = _presenter.ShowClub(clubId);
-        // The visible query reflects the exact-ID club filter, so re-searching it
-        // preserves the same club even if future fixtures share similar names.
-        QueryBox.Text = view.SelectedClub?.DemonstrationId ?? "";
-        Render(view);
+        RunSafely(() =>
+        {
+            var clubId = _presenter.Current().SelectedClub?.DemonstrationId;
+            var view = _presenter.ShowClub(clubId);
+            // Only the invented ID is shown: no process, file path or external input.
+            QueryBox.Text = view.SelectedClub?.DemonstrationId ?? "";
+            return view;
+        });
     }
 
     private void PlayersGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_rendering) return;
-        Render(_presenter.SelectPlayer(
+        RunSafely(() => _presenter.SelectPlayer(
             (PlayersGrid.SelectedItem as OfflineExpandedPlayer)?.Profile.DemonstrationId));
     }
 
@@ -54,6 +149,10 @@ public partial class OfflineWorkspaceWindow : Window
         _rendering = true;
         try
         {
+            QueryBox.IsEnabled = true;
+            SearchButton.IsEnabled = true;
+            PlayersGrid.IsEnabled = true;
+            ResetButton.IsEnabled = true;
             var roster = view.Roster;
             PlayersGrid.ItemsSource = roster.VisiblePlayers;
             PlayersGrid.SelectedIndex = roster.SelectedIndex;
