@@ -111,7 +111,7 @@ static class F30Lifecycle
             GC.WaitForPendingFinalizers();
         }
         var retained = weakWindows.Count(w => w.TryGetTarget(out _));
-        Check(retained <= 4, Cycles, "unexpected strong retention after 48 closed windows");
+        Check(retained <= 4, Cycles, "unexpected strong retention after 48 closed windows: retained=" + retained);
         Console.WriteLine($"F30.2 WPF PASS: {Cycles} created/closed, {assertions} assertions; weak references retained={retained}; synthetic STA only");
     }
 }
