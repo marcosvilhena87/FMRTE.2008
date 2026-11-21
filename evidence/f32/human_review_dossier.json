@@ -1,5 +1,5 @@
 {
-  "schema": "f32-human-review-preparation/v1",
+  "schema": "f32-human-review-preparation/v2",
   "scope": "OFFLINE_DOCUMENTARY_PREPARATION_ONLY",
   "baseline": {
     "implementationCommit": "486fabe2aff423fb5544110ec992ba6b1707b317",
@@ -325,7 +325,12 @@
       ],
       "state": "PENDING",
       "reviewer": null,
-      "completedAt": null
+      "completedAt": null,
+      "riskIds": [
+        "RA-01",
+        "RA-06"
+      ],
+      "closureRequirement": "Revisor humano deve examinar identidade da build, PID e base por instância com fontes independentes; sem fechamento por CI."
     },
     {
       "id": "G2",
@@ -337,7 +342,13 @@
       ],
       "state": "PENDING",
       "reviewer": null,
-      "completedAt": null
+      "completedAt": null,
+      "riskIds": [
+        "RA-02",
+        "RA-03",
+        "RA-05"
+      ],
+      "closureRequirement": "Revisor humano deve contrastar IDs e nomes com fontes independentes, incluindo nome comum e representatividade; sem extrapolar amostras."
     },
     {
       "id": "G3",
@@ -350,7 +361,14 @@
       ],
       "state": "PENDING",
       "reviewer": null,
-      "completedAt": null
+      "completedAt": null,
+      "riskIds": [
+        "RA-02",
+        "RA-03",
+        "RA-04",
+        "RA-06"
+      ],
+      "closureRequirement": "Revisor humano deve avaliar limites de consistência, cancelamento e reinício sem alegar atomicidade real com base em simulação."
     },
     {
       "id": "G4",
@@ -360,7 +378,12 @@
       ],
       "state": "PENDING",
       "reviewer": null,
-      "completedAt": null
+      "completedAt": null,
+      "riskIds": [
+        "RA-07",
+        "RA-08"
+      ],
+      "closureRequirement": "Revisor humano deve confirmar escopo somente leitura e não utilização de offsets legados, incluindo RA-07 e RA-08; sem acesso real pelo F32."
     },
     {
       "id": "G5",
@@ -370,7 +393,18 @@
       ],
       "state": "PENDING",
       "reviewer": null,
-      "completedAt": null
+      "completedAt": null,
+      "riskIds": [
+        "RA-01",
+        "RA-02",
+        "RA-03",
+        "RA-04",
+        "RA-05",
+        "RA-06",
+        "RA-07",
+        "RA-08"
+      ],
+      "closureRequirement": "Autoridade humana identificada deve registrar avaliação dos oito riscos e decisão formal separada; F32 não contém decisão."
     }
   ],
   "reviewProtocol": {
@@ -422,5 +456,301 @@
       "RA-08": null
     }
   },
-  "nextAction": "HUMAN_EVIDENCE_REVIEW_NOT_STARTED"
+  "nextAction": "HUMAN_EVIDENCE_REVIEW_NOT_STARTED",
+  "sourceInventory": [
+    {
+      "id": "MATRIX",
+      "path": "research/builds/fm2008-8.0.2v1-minimal-map-approval-matrix.md",
+      "gitBlobSha1": "b29d4e21d97209a52fc009ab3d4eac03b4956f49",
+      "evidenceKind": "VERSIONED_DOCUMENTARY_REFERENCE",
+      "independentObservationVerified": false
+    },
+    {
+      "id": "RISKS",
+      "path": "research/builds/fm2008-8.0.2v1-residual-risk-review-after-r07.md",
+      "gitBlobSha1": "071368d325fc9770a6c436eb67bf520bd5344207",
+      "evidenceKind": "VERSIONED_DOCUMENTARY_REFERENCE",
+      "independentObservationVerified": false
+    },
+    {
+      "id": "AUDIT",
+      "path": "research/builds/fm2008-8.0.2v1-a01-a12-code-audit-2026-11-19.md",
+      "gitBlobSha1": "59e0513a23272ed8e569043edcee762b1b4ad06f",
+      "evidenceKind": "VERSIONED_DOCUMENTARY_REFERENCE",
+      "independentObservationVerified": false
+    },
+    {
+      "id": "SECOND_SAVE",
+      "path": "research/builds/fm2008-8.0.2v1-second-save-distributed-r07.md",
+      "gitBlobSha1": "9489499c3e91d4c7b7ad2099c6e1c2425249dcfd",
+      "evidenceKind": "VERSIONED_DOCUMENTARY_REFERENCE",
+      "independentObservationVerified": false
+    },
+    {
+      "id": "PROTOCOL",
+      "path": "research/builds/fm2008-8.0.2v1-independent-verification-protocol.md",
+      "gitBlobSha1": "96b5504062384229f631ffefabcd9e8e8f22cff8",
+      "evidenceKind": "VERSIONED_DOCUMENTARY_REFERENCE",
+      "independentObservationVerified": false
+    }
+  ],
+  "primaryEvidence": [
+    {
+      "criterionId": "A01",
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-01",
+        "RA-06"
+      ],
+      "documentaryState": "PARTIAL",
+      "receiptStatus": "NOT_PROVIDED",
+      "evidenceType": "UNVERIFIED_PRIMARY_EVIDENCE_SLOT",
+      "artifactId": null,
+      "sha256": null,
+      "collectionContext": null,
+      "executor": null,
+      "observedAt": null,
+      "independentlyAuthenticated": false,
+      "reviewStatus": "PENDING"
+    },
+    {
+      "criterionId": "A02",
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-01"
+      ],
+      "documentaryState": "PARTIAL",
+      "receiptStatus": "NOT_PROVIDED",
+      "evidenceType": "UNVERIFIED_PRIMARY_EVIDENCE_SLOT",
+      "artifactId": null,
+      "sha256": null,
+      "collectionContext": null,
+      "executor": null,
+      "observedAt": null,
+      "independentlyAuthenticated": false,
+      "reviewStatus": "PENDING"
+    },
+    {
+      "criterionId": "A03",
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-02",
+        "RA-03"
+      ],
+      "documentaryState": "SAMPLED",
+      "receiptStatus": "NOT_PROVIDED",
+      "evidenceType": "UNVERIFIED_PRIMARY_EVIDENCE_SLOT",
+      "artifactId": null,
+      "sha256": null,
+      "collectionContext": null,
+      "executor": null,
+      "observedAt": null,
+      "independentlyAuthenticated": false,
+      "reviewStatus": "PENDING"
+    },
+    {
+      "criterionId": "A04",
+      "sourceIds": [
+        "MATRIX",
+        "RISKS",
+        "SECOND_SAVE",
+        "PROTOCOL"
+      ],
+      "riskIds": [
+        "RA-05"
+      ],
+      "documentaryState": "USER_DECLARED",
+      "receiptStatus": "NOT_PROVIDED",
+      "evidenceType": "UNVERIFIED_PRIMARY_EVIDENCE_SLOT",
+      "artifactId": null,
+      "sha256": null,
+      "collectionContext": null,
+      "executor": null,
+      "observedAt": null,
+      "independentlyAuthenticated": false,
+      "reviewStatus": "PENDING"
+    },
+    {
+      "criterionId": "A05",
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-04"
+      ],
+      "documentaryState": "SIMULATED",
+      "receiptStatus": "NOT_PROVIDED",
+      "evidenceType": "UNVERIFIED_PRIMARY_EVIDENCE_SLOT",
+      "artifactId": null,
+      "sha256": null,
+      "collectionContext": null,
+      "executor": null,
+      "observedAt": null,
+      "independentlyAuthenticated": false,
+      "reviewStatus": "PENDING"
+    },
+    {
+      "criterionId": "A06",
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-03"
+      ],
+      "documentaryState": "PARTIAL",
+      "receiptStatus": "NOT_PROVIDED",
+      "evidenceType": "UNVERIFIED_PRIMARY_EVIDENCE_SLOT",
+      "artifactId": null,
+      "sha256": null,
+      "collectionContext": null,
+      "executor": null,
+      "observedAt": null,
+      "independentlyAuthenticated": false,
+      "reviewStatus": "PENDING"
+    },
+    {
+      "criterionId": "A07",
+      "sourceIds": [
+        "MATRIX",
+        "RISKS",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-02",
+        "RA-06"
+      ],
+      "documentaryState": "PARTIAL",
+      "receiptStatus": "NOT_PROVIDED",
+      "evidenceType": "UNVERIFIED_PRIMARY_EVIDENCE_SLOT",
+      "artifactId": null,
+      "sha256": null,
+      "collectionContext": null,
+      "executor": null,
+      "observedAt": null,
+      "independentlyAuthenticated": false,
+      "reviewStatus": "PENDING"
+    },
+    {
+      "criterionId": "A08",
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-02",
+        "RA-03"
+      ],
+      "documentaryState": "SIMULATED",
+      "receiptStatus": "NOT_PROVIDED",
+      "evidenceType": "UNVERIFIED_PRIMARY_EVIDENCE_SLOT",
+      "artifactId": null,
+      "sha256": null,
+      "collectionContext": null,
+      "executor": null,
+      "observedAt": null,
+      "independentlyAuthenticated": false,
+      "reviewStatus": "PENDING"
+    },
+    {
+      "criterionId": "A09",
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-08"
+      ],
+      "documentaryState": "BLOCKED_SAFE",
+      "receiptStatus": "NOT_PROVIDED",
+      "evidenceType": "UNVERIFIED_PRIMARY_EVIDENCE_SLOT",
+      "artifactId": null,
+      "sha256": null,
+      "collectionContext": null,
+      "executor": null,
+      "observedAt": null,
+      "independentlyAuthenticated": false,
+      "reviewStatus": "PENDING"
+    },
+    {
+      "criterionId": "A10",
+      "sourceIds": [
+        "MATRIX",
+        "RISKS",
+        "SECOND_SAVE",
+        "PROTOCOL"
+      ],
+      "riskIds": [
+        "RA-05"
+      ],
+      "documentaryState": "SAMPLED",
+      "receiptStatus": "NOT_PROVIDED",
+      "evidenceType": "UNVERIFIED_PRIMARY_EVIDENCE_SLOT",
+      "artifactId": null,
+      "sha256": null,
+      "collectionContext": null,
+      "executor": null,
+      "observedAt": null,
+      "independentlyAuthenticated": false,
+      "reviewStatus": "PENDING"
+    },
+    {
+      "criterionId": "A11",
+      "sourceIds": [
+        "MATRIX",
+        "AUDIT"
+      ],
+      "riskIds": [
+        "RA-06"
+      ],
+      "documentaryState": "PARTIAL",
+      "receiptStatus": "NOT_PROVIDED",
+      "evidenceType": "UNVERIFIED_PRIMARY_EVIDENCE_SLOT",
+      "artifactId": null,
+      "sha256": null,
+      "collectionContext": null,
+      "executor": null,
+      "observedAt": null,
+      "independentlyAuthenticated": false,
+      "reviewStatus": "PENDING"
+    },
+    {
+      "criterionId": "A12",
+      "sourceIds": [
+        "MATRIX",
+        "RISKS",
+        "PROTOCOL"
+      ],
+      "riskIds": [
+        "RA-01",
+        "RA-02",
+        "RA-03",
+        "RA-04",
+        "RA-05",
+        "RA-06",
+        "RA-07",
+        "RA-08"
+      ],
+      "documentaryState": "GATE_BLOCKED",
+      "receiptStatus": "NOT_PROVIDED",
+      "evidenceType": "UNVERIFIED_PRIMARY_EVIDENCE_SLOT",
+      "artifactId": null,
+      "sha256": null,
+      "collectionContext": null,
+      "executor": null,
+      "observedAt": null,
+      "independentlyAuthenticated": false,
+      "reviewStatus": "PENDING"
+    }
+  ]
 }

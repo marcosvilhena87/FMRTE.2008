@@ -32,8 +32,9 @@ jobs:
           import json,sys
           r=json.load(open(sys.argv[1],encoding="utf-8"))
           assert r["result"]=="PASS" and r["criteria"]==12 and r["risks"]==8 and r["gates"]==5
-          assert r["negativeCount"]==45 and len(r["negativeCases"])==45
-          assert len({c["id"] for c in r["negativeCases"]})==45
+          assert r["sourceReferences"]==5 and r["primaryEvidenceSlots"]==12
+          assert r["negativeCount"]==86 and len(r["negativeCases"])==86
+          assert len({c["id"] for c in r["negativeCases"]})==86
           assert all(c["result"]=="REJECTED" for c in r["negativeCases"])
           assert r["approved"] is False and r["operational"] is False
           assert r["humanDecision"]=="NOT_MADE"

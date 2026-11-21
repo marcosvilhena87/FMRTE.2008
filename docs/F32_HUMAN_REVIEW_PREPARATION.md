@@ -25,3 +25,11 @@ A integridade de documentos e de SHA não autentica logs históricos nem resulta
 
 ## Aceitação técnica F32
 O workflow `F32 human review preparation` verifica o dossiê, referência ao manifesto F31 e **45 negativos dirigidos por motivo**, executa duas vezes e compara relatórios byte a byte. Somente `PASS` documental é permitido. O PR deve ficar em Draft até revisão independente, sem merge automático nem aprovação do mapa.
+
+## F32-R — resposta à revisão independente R01–R03
+
+- **R01 — Inventário verificável:** cinco referências documentais versionadas (caminho e Git blob SHA-1 herdados do F31), mais 12 posições de recebimento de **evidência primária ainda não fornecida**. Cada posição informa critério, riscos, estado documental herdado e proveniência, com `receiptStatus=NOT_PROVIDED`, identificador/hash/autor/data/contexto nulos. Não se inventou executor, dado observado ou autenticação independente. Os estados `USER_DECLARED` do F31 são qualificações documentais, não evidência primária autenticada.
+- **R02 — Matriz fechada G↔A↔RA:** G1 relaciona A01/A02/A11 e RA-01/RA-06; G2 relaciona A03/A04/A10 e RA-02/RA-03/RA-05; G3 relaciona A05–A08 e RA-02/RA-03/RA-04/RA-06; G4 relaciona A09 e RA-07/RA-08; G5 relaciona A12 e todos os oito riscos. Cada gate tem requisito de análise humana explícito, mas permanece `PENDING`.
+- **R03 — Negativos e origem:** 86 casos exclusivos, incluindo mutações de recebimento/hashes de evidências primárias, associações e condições dos gates, campos de assinatura, decisão de risco e revisão, além de alteração real dos bytes do F31 para demonstrar rejeição do hash fixado. O contador do relatório reflete os elementos validados, não constantes artificiais. Relatórios determinísticos são comparados no CI.
+
+**Limite inalterado:** o inventário documenta *ausência* de evidências primárias verificadas. F32 não coleta dados do jogo, não autentica relatos históricos, não aceita riscos e não contém decisão humana. A WPF e a fonte de dados continuam inteiramente offline/sintéticas, sem leitura real, escrita ou ativação operacional. Este PR deve permanecer Draft e sem merge até revisão posterior.

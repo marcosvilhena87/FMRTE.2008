@@ -38,15 +38,15 @@ def parse(raw):
 def blob_sha(raw):
     return hashlib.sha1(b"blob "+str(len(raw)).encode("ascii")+b"\x00"+raw).hexdigest()
 
-def source():
-    raw=F31_PATH.read_bytes()
+def source(raw_override=None):
+    raw=F31_PATH.read_bytes() if raw_override is None else raw_override
     need(blob_sha(raw)==F31_BLOB,"F31 immutable source blob")
     return parse(raw)
 
 def validate(d,upstream):
-    closed(d,{"schema","scope","baseline","criteria","risks","gates","reviewProtocol",
+    closed(d,{"schema","scope","baseline","sourceInventory","primaryEvidence","criteria","risks","gates","reviewProtocol",
         "limitations","wpf","governance","nextAction"},"root")
-    need(d["schema"]=="f32-human-review-preparation/v1"
+    need(d["schema"]=="f32-human-review-preparation/v2"
          and d["scope"]=="OFFLINE_DOCUMENTARY_PREPARATION_ONLY","scope")
     b=d["baseline"]
     closed(b,{"implementationCommit","mappingCommit","f31ManifestPath","f31ManifestBlob",
@@ -55,6 +55,41 @@ def validate(d,upstream):
          "f31ManifestPath":"evidence/f31/minimal_map_readiness.json",
          "f31ManifestBlob":F31_BLOB,"build":"FM2008 8.0.2v1",
          "referenceKind":"VERSIONED_DOCUMENTS_NOT_INDEPENDENT_OBSERVATIONS"},"baseline identity")
+    # R01: source inventory is inherited verbatim; these are documentary references, not primary observations.
+    inventory=d["sourceInventory"]
+    need(type(inventory) is list and len(inventory)==5,"source inventory count")
+    upstream_sources={x["id"]:x for x in upstream["sources"]}
+    need(len(upstream_sources)==5 and len(upstream["sources"])==5,"upstream source inventory")
+    source_seen=set()
+    for s in inventory:
+        closed(s,{"id","path","gitBlobSha1","evidenceKind","independentObservationVerified"},"source record")
+        sid=s["id"]
+        need(type(sid) is str and sid in upstream_sources and sid not in source_seen,"source identity")
+        source_seen.add(sid)
+        original=upstream_sources[sid]
+        need(s["path"]==original["path"] and s["gitBlobSha1"]==original["gitBlobSha1"],"source pin "+sid)
+        need(s["evidenceKind"]=="VERSIONED_DOCUMENTARY_REFERENCE" and
+             s["independentObservationVerified"] is False,"source cannot authenticate observations "+sid)
+    slots=d["primaryEvidence"]
+    need(type(slots) is list and len(slots)==12,"evidence slot count")
+    slot_seen=set()
+    known={c["id"]:c for c in upstream["criteria"]}
+    for slot in slots:
+        closed(slot,{"criterionId","sourceIds","riskIds","documentaryState","receiptStatus","evidenceType",
+                     "artifactId","sha256","collectionContext","executor","observedAt",
+                     "independentlyAuthenticated","reviewStatus"},"evidence slot")
+        cid=slot["criterionId"]
+        need(type(cid) is str and cid in known and cid not in slot_seen,"evidence slot identity")
+        slot_seen.add(cid)
+        upstream_item=known[cid]
+        need(slot["sourceIds"]==upstream_item["sourceIds"] and slot["riskIds"]==upstream_item["risks"]
+             and slot["documentaryState"]==upstream_item["status"],"evidence slot provenance "+cid)
+        need(slot["receiptStatus"]=="NOT_PROVIDED" and
+             slot["evidenceType"]=="UNVERIFIED_PRIMARY_EVIDENCE_SLOT" and
+             all(slot[key] is None for key in ("artifactId","sha256","collectionContext","executor","observedAt"))
+             and slot["independentlyAuthenticated"] is False and slot["reviewStatus"]=="PENDING",
+             "evidence slot cannot promote "+cid)
+    need(slot_seen==set(CRITERIA),"evidence coverage")
     cs=d["criteria"]; need(type(cs) is list and len(cs)==12,"criterion count")
     upstream_cs={c["id"]:c for c in upstream["criteria"]}
     need(set(upstream_cs)==set(CRITERIA),"upstream criteria")
@@ -90,10 +125,22 @@ def validate(d,upstream):
     gs=d["gates"]; need(type(gs) is list and len(gs)==5,"gate count")
     expected=[["A01","A02","A11"],["A03","A04","A10"],["A05","A06","A07","A08"],
               ["A09"],["A12"]]
+    expected_risk_links=[
+        ["RA-01","RA-06"],["RA-02","RA-03","RA-05"],
+        ["RA-02","RA-03","RA-04","RA-06"],["RA-07","RA-08"],RISKS]
+    closure_rules=[
+    "Revisor humano deve examinar identidade da build, PID e base por instância com fontes independentes; sem fechamento por CI.",
+    "Revisor humano deve contrastar IDs e nomes com fontes independentes, incluindo nome comum e representatividade; sem extrapolar amostras.",
+    "Revisor humano deve avaliar limites de consistência, cancelamento e reinício sem alegar atomicidade real com base em simulação.",
+    "Revisor humano deve confirmar escopo somente leitura e não utilização de offsets legados, incluindo RA-07 e RA-08; sem acesso real pelo F32.",
+    "Autoridade humana identificada deve registrar avaliação dos oito riscos e decisão formal separada; F32 não contém decisão."
+]
     for i,g in enumerate(gs):
-        closed(g,{"id","label","criteriaIds","state","reviewer","completedAt"},"gate")
+        closed(g,{"id","label","criteriaIds","riskIds","closureRequirement","state","reviewer","completedAt"},"gate")
         need(g["id"]==GATES[i] and type(g["label"]) is str and len(g["label"])>15
             and g["criteriaIds"]==expected[i],"gate mapping "+GATES[i])
+        need(g["riskIds"]==expected_risk_links[i],"gate risk links "+GATES[i])
+        need(g["closureRequirement"]==closure_rules[i],"gate closure "+GATES[i])
         need(g["state"]=="PENDING" and g["reviewer"] is None
             and g["completedAt"] is None,"gate decision "+GATES[i])
     review=d["reviewProtocol"]
@@ -125,7 +172,8 @@ def validate(d,upstream):
     need(all(type(gov[k]) is type(v) and gov[k]==v for k,v in expected_g.items()),
          "governance approval gate")
     need(d["nextAction"]=="HUMAN_EVIDENCE_REVIEW_NOT_STARTED","next action")
-    return {"result":"PASS","criteria":len(seen) if False else 12,"risks":8,"gates":5,
+    return {"result":"PASS","criteria":len(cs),"risks":len(rs),"gates":len(gs),
+            "sourceReferences":len(inventory),"primaryEvidenceSlots":len(slots),
             "humanDecision":"NOT_MADE","approved":False,"operational":False,
             "f31SourceBlob":F31_BLOB,"mappingCommit":MAPPING_COMMIT,
             "historicEvidenceIndependentlyAuthenticated":False}
@@ -195,7 +243,44 @@ def negative_tests(doc,base):
         except Invalid as e: need("JSON duplicate key" in str(e),"wrong duplicate error")
         else: raise AssertionError(name+" was accepted")
         out.append({"id":name,"result":"REJECTED","expectedReason":"JSON duplicate key"})
-    need(len(out)==45 and len({x["id"] for x in out})==45,"negative inventory incomplete")
+    # F32-R: primary evidence must not be invented or silently promoted.
+    for i in range(12):
+        cid=CRITERIA[i]
+        reject("primary-receipt-"+cid,
+               lambda x,i=i:x["primaryEvidence"][i].update(receiptStatus="RECEIVED"),
+               "evidence slot cannot promote "+cid)
+    for i in range(8):
+        cid=CRITERIA[i]
+        reject("primary-fake-hash-"+cid,
+               lambda x,i=i:x["primaryEvidence"][i].update(sha256="a"*64),
+               "evidence slot cannot promote "+cid)
+    for i in range(5):
+        gid=GATES[i]
+        reject("gate-risk-"+gid,lambda x,i=i:x["gates"][i].update(riskIds=["RA-08"]),
+               "gate risk links "+gid)
+        reject("gate-closure-"+gid,lambda x,i=i:x["gates"][i].update(closureRequirement="approved by CI"),
+               "gate closure "+gid)
+    reject("source-claim-independent",
+           lambda x:x["sourceInventory"][0].update(independentObservationVerified=True),
+           "source cannot authenticate observations MATRIX")
+    reject("fake-signature",lambda x:x["reviewProtocol"].update(signature="GITHUB"),"human decision")
+    reject("fake-assessment",lambda x:x["reviewProtocol"].update(independentAssessment="PASS"),"human decision")
+    reject("fake-risk-decision",lambda x:x["reviewProtocol"].update(residualRiskDecision="ACCEPT"),"human decision")
+    reject("fake-mitigation",lambda x:x["risks"][0].update(mitigationReview="done"),"risk acceptance RA-01")
+    reject("risk-accepted-by",lambda x:x["risks"][1].update(acceptedBy="CI"),"risk acceptance RA-02")
+    reject("risk-accepted-at",lambda x:x["risks"][2].update(acceptedAt="2026-11-21"),"risk acceptance RA-03")
+    reject("gate-closed-at",lambda x:x["gates"][0].update(completedAt="2026-11-21"),"gate decision G1")
+    reject("gate-named-reviewer",lambda x:x["gates"][1].update(reviewer="BOT"),"gate decision G2")
+    reject("promote-next-action",lambda x:x.update(nextAction="APPROVED"),"next action")
+    # Exercise real upstream source() with mutated F31 bytes, not merely a mutated dossier pointer.
+    corrupted=F31_PATH.read_bytes()+b" "
+    try: source(corrupted)
+    except Invalid as e:
+        need("F31 immutable source blob" in str(e),"F31 mutation wrong rejection")
+    else:
+        raise AssertionError("F31 source mutation accepted")
+    out.append({"id":"alter-F31-content","result":"REJECTED","expectedReason":"F31 immutable source blob"})
+    need(len(out)==86 and len({x["id"] for x in out})==86,"negative inventory incomplete")
     return out
 
 def main():
