@@ -62,7 +62,8 @@ public sealed class OfflineExpandedPlayer
         if (entries.Length != profile.Attributes.Count ||
             entries.Any(a => a is null) ||
             entries.Select(a => a.Attribute.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count() != entries.Length ||
-            entries.Any(a => !profile.Attributes.Any(original => original == a.Attribute)))
+            entries.Any(a => !profile.Attributes.Any(original => original == a.Attribute)) ||
+            entries.Any(a => a.Category != OfflineAttributeCategoryCatalog.Resolve(a.Attribute.Name)))
             throw new ArgumentException("Classificação divergente dos atributos fictícios.", nameof(categorizedAttributes));
         Profile = profile;
         Club = club;
