@@ -6,6 +6,9 @@ import argparse
 import copy
 import hashlib
 import json
+import os
+import re
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -58,6 +61,57 @@ TOP_KEYS = {
 }
 class EvidenceError(ValueError):
     pass
+
+
+def no_duplicate_keys(pairs: list[tuple[str, object]]) -> dict:
+    obj = {}
+    for key, value in pairs:
+        if key in obj:
+            raise EvidenceError(f"duplicate JSON object key: {key}")
+        obj[key] = value
+    return obj
+
+
+def load_manifest(raw: str) -> dict:
+    parsed = json.loads(raw, object_pairs_hook=no_duplicate_keys,
+                        parse_constant=lambda value: (_ for _ in ()).throw(
+                            EvidenceError(f"non-finite JSON constant: {value}")))
+    require(type(parsed) is dict, "manifest root is not an object")
+    return parsed
+
+
+def execution_identity() -> dict:
+    fields = ("GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "GITHUB_EVENT_NAME",
+              "GITHUB_SHA", "F30_PR_HEAD_SHA")
+    require(all(os.environ.get(key) for key in fields),
+            "missing runner provenance: do not claim CI identity outside CI")
+    event = os.environ["GITHUB_EVENT_NAME"]
+    require(event in ("push", "pull_request"), "unrecognized CI event")
+    sha = os.environ["GITHUB_SHA"]
+    head = os.environ["F30_PR_HEAD_SHA"]
+    require(all(re.fullmatch(r"[0-9a-f]{40}", val) for val in (sha, head)),
+            "invalid checkout or PR head SHA")
+    checkout = subprocess.check_output(["git", "rev-parse", "HEAD"],
+                                       cwd=ROOT, text=True).strip()
+    require(checkout == sha, "actual Git checkout differs from runner event SHA")
+    if event == "push":
+        require(head == checkout, "push event head differs from actual checkout")
+    else:
+        require(head != PINNED_CHECKOUT, "PR head points to historical evidence")
+    run_id = os.environ["GITHUB_RUN_ID"]
+    attempt = os.environ["GITHUB_RUN_ATTEMPT"]
+    require(run_id.isdecimal() and attempt.isdecimal() and
+            int(run_id) > 0 and int(attempt) > 0, "invalid runner execution ID")
+    return {
+        "historicEvidenceCommit": PINNED_CHECKOUT,
+        "executionCheckoutSha": checkout,
+        "runnerEventSha": sha,
+        "prHeadSha": head,
+        "workflowRunId": int(run_id),
+        "workflowAttempt": int(attempt),
+        "event": event,
+        "historicalCiReauthenticated": False,
+    }
 
 
 def require(cond: bool, message: str) -> None:
@@ -171,6 +225,14 @@ def validate(manifest: dict, root: Path = ROOT) -> dict:
         "approved": False,
         "human_approval": None,
         "decision": "NOT_MADE",
+        "approval_state": gov["approval_state"],
+        "approvedPlayerMaps": gov["approvedPlayerMaps"],
+        "B03": gov["B03"],
+        "A12": gov["A12"],
+        "risk_acceptances": dict(sorted(risk.items())),
+        "human_reviewer": gov["human_reviewer"],
+        "human_review_timestamp": gov["human_review_timestamp"],
+        "human_authority": gov["human_authority"],
     }
 
 
@@ -212,16 +274,35 @@ def negative_tests(valid: dict) -> int:
         ("limitations erased", lambda x: x.update(evidence_limitations=[])),
         ("historical authenticity overstated", lambda x: x.update(evidence_limitations=["something"]*5)),
     ]
+    checked = []
     for name, mutate in probes:
         data = copy.deepcopy(valid)
         mutate(data)
         try:
             validate(data)
         except EvidenceError:
-            continue
-        raise AssertionError(f"negative test bypassed: {name}")
-    # Mutate the real source bytes under a temporary overlay without touching
-    # checkout files, to verify that merely changing a file's contents fails.
+            checked.append({"case": name, "result": "REJECTED"})
+        else:
+            raise AssertionError(f"negative test bypassed: {name}")
+
+    # These two tests exercise raw JSON parsing, which is where duplicates
+    # are otherwise silently collapsed into the last value by json.loads.
+    serialized = json.dumps(valid, ensure_ascii=False)
+    malformed = {
+        "duplicate root key": '{"schema":"other",' + serialized[1:],
+        "duplicate nested approval key": serialized.replace(
+            '"approved": false', '"approved": true, "approved": false', 1),
+    }
+    for name, raw in malformed.items():
+        try:
+            validate(load_manifest(raw))
+        except EvidenceError:
+            checked.append({"case": name, "result": "REJECTED"})
+        else:
+            raise AssertionError(f"ambiguous JSON accepted: {name}")
+
+    # Alter each of the NINE real pinned sources independently inside a
+    # temporary overlay. The repository checkout is never touched.
     import tempfile
     import shutil
     with tempfile.TemporaryDirectory() as td:
@@ -230,15 +311,63 @@ def negative_tests(valid: dict) -> int:
             target = tmp / path
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / path, target)
-        first = tmp / next(iter(PINNED_SOURCES))
-        first.write_bytes(first.read_bytes() + b"\n# tampered content\n")
-        try:
-            validate(copy.deepcopy(valid), root=tmp)
-        except EvidenceError:
-            pass
-        else:
-            raise AssertionError("changed source bytes bypassed the manifest verifier")
-    return len(probes) + 1
+        for path in PINNED_SOURCES:
+            target = tmp / path
+            original = target.read_bytes()
+            target.write_bytes(original + b"\n# tampered content\n")
+            try:
+                validate(copy.deepcopy(valid), root=tmp)
+            except EvidenceError:
+                checked.append({"case": "source bytes mutated: " + path,
+                                "result": "REJECTED"})
+            else:
+                raise AssertionError(f"source byte mutation bypassed: {path}")
+            finally:
+                target.write_bytes(original)
+    expected_cases = {
+        "unknown schema",
+        "unknown root field",
+        "checkout mutated",
+        "repository changed",
+        "source missing",
+        "source duplicate",
+        "source path escape",
+        "source blob mutated",
+        "extra source property",
+        "stage erased",
+        "stage wrong PR",
+        "stage fake count",
+        "stage wrong job",
+        "stage fake log",
+        "stage no longer synthetic",
+        "CI run missing",
+        "CI run duplicate",
+        "CI falsely passed",
+        "CI run ID replaced",
+        "mapping changed",
+        "operational activated",
+        "approval activated",
+        "player maps activated",
+        "approval booleans wrong type",
+        "B03 promoted",
+        "A12 promoted",
+        "decision fabricated",
+        "reviewer invented",
+        "review timestamp invented",
+        "human authority invented",
+        "human approval invented",
+        "risk accepted",
+        "risk dropped",
+        "limitations erased",
+        "historical authenticity overstated",
+        "duplicate root key", "duplicate nested approval key",
+    } | {"source bytes mutated: " + path for path in PINNED_SOURCES}
+    require(len(expected_cases) == 46, "expected negative case manifest is incomplete")
+    require(len(checked) == 46 and
+            {item["case"] for item in checked} == expected_cases and
+            all(item["result"] == "REJECTED" for item in checked),
+            "negative case set differs from closed 46-case contract")
+    return sorted(checked, key=lambda x: x["case"])
 
 
 def main() -> None:
@@ -247,10 +376,13 @@ def main() -> None:
     parser.add_argument("--report", type=Path)
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
-    data = json.loads(args.manifest.read_text(encoding="utf-8"))
+    data = load_manifest(args.manifest.read_text(encoding="utf-8"))
     report = validate(data)
+    report["execution"] = execution_identity()
     if args.self_test:
-        report["negative_cases_passed"] = negative_tests(data)
+        cases = negative_tests(data)
+        report["negative_cases"] = cases
+        report["negative_cases_passed"] = len(cases)
     if args.report:
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(
