@@ -13,7 +13,7 @@ using FMRTE2008.Domain;
 
 static class F30NativeWindows
 {
-    private const int Cycles = 48;
+    private const int Cycles = 96;
     private static int assertions;
     private static int postCloseCallbacks;
     private readonly record struct ResourceSnapshot(int Handles, int Gdi, int User);
@@ -250,9 +250,9 @@ static class F30NativeWindows
                 "shared Dispatcher remains alive");
             if (i + 1 == Cycles)
             {
-                Check(StableLast24(checkpoints[2].Handles, now.Handles), i,
+                Check(StableLast24(checkpoints[checkpoints.Count - 4].Handles, now.Handles), i,
                     "last 24 windows grew more than 8 handles: progressive leak");
-                Check(now.Gdi - checkpoints[2].Gdi <= 4 && now.User - checkpoints[2].User <= 4,
+                Check(now.Gdi - checkpoints[checkpoints.Count - 4].Gdi <= 4 && now.User - checkpoints[checkpoints.Count - 4].User <= 4,
                     i, "last 24 windows grew more than 4 GDI or USER objects");
             }
         }
