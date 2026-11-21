@@ -50,9 +50,14 @@ static class F30Stress
                 iteration, "displayed player ID must match selected row exactly");
             Check(club.Text.EndsWith("(" + expectedClubId + ")", StringComparison.Ordinal),
                 iteration, "displayed club ID must match selected row exactly");
-            Check(!string.IsNullOrEmpty(contract.Text) && !string.IsNullOrEmpty(wage.Text)
-                  && technical.Items.Count > 0 && mental.Items.Count > 0
-                  && physical.Items.Count > 0, iteration, "selected synthetic player details populated");
+            // A synthetic profile may legitimately lack a category. Compare
+            // each rendered grid with its specific selected fixture, not > 0.
+            Check(!string.IsNullOrEmpty(contract.Text) &&
+                !string.IsNullOrEmpty(wage.Text) &&
+                technical.Items.Count == row!.AttributesFor(OfflineAttributeCategory.Technical).Count &&
+                mental.Items.Count == row.AttributesFor(OfflineAttributeCategory.Mental).Count &&
+                physical.Items.Count == row.AttributesFor(OfflineAttributeCategory.Physical).Count,
+                iteration, "attribute categories match the selected fixture exactly");
         }
 
         void Empty(int iteration)
