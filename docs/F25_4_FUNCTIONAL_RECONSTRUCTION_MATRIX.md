@@ -27,7 +27,7 @@ As palavras `OBSERVED` e `INFERRED` são distintas: nomes de classes e tokens s�
 5. **Testes:** preservar testes de regressão F01–F25.3, incluir contratos e mutações negativas no JSON F25.4. Reavaliar equivalência real somente com evidência apropriada e etapa formal posterior.
 
 ## Validação F25.4
-`test_f25_functional_matrix.py` verifica caminhos reais do projeto, vínculo módulo/caminho, identidade da fonte, unicidade de linhas e tokens, enumerações de estado e invariantes. **20 testes** (1 válido e 19 mutações negativas) rodam no Windows e Linux com GitHub Actions, sem ZIP histórico no CI. Não há teste de escrita, interação com `fm.exe`, alteração de mapas ou execução do FMRTE original.
+`test_f25_functional_matrix.py` verifica caminhos reais do projeto, vínculo módulo/caminho, identidade da fonte, unicidade de linhas e tokens, enumerações de estado e invariantes. **21 testes** (1 válido e 20 mutações negativas) rodam no Windows e Linux com GitHub Actions, sem ZIP histórico no CI. Não há teste de escrita, interação com `fm.exe`, alteração de mapas ou execução do FMRTE original.
 
 ### Lacunas reconhecidas
 - A matriz **não** demonstra equivalência semântica entre as classes antigas e o design atual.
