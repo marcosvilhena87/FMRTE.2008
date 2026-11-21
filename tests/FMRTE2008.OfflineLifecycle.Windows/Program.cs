@@ -50,13 +50,15 @@ static class F30Lifecycle
                   cycle, "fresh selection identity independent of previous window");
 
             var observedResetClick = 0;
+            var resetInvocationsBefore = window.ResetInvocationsForTests;
             RoutedEventHandler observer = (_, _) => observedResetClick++;
             reset.Click += observer;
             try
             {
                 Click(window, "ResetButton");
-                Check(observedResetClick == 1 && grid.Items.Count == expected,
-                      cycle, "single reset event and no duplicated effect");
+                Check(observedResetClick == 1 && grid.Items.Count == expected &&
+                      window.ResetInvocationsForTests == resetInvocationsBefore + 1,
+                      cycle, "one routed click invokes production reset handler exactly once");
             }
             finally { reset.Click -= observer; }
 
@@ -95,6 +97,8 @@ static class F30Lifecycle
         finally { window.Close(); }
         Check(closing == 1 && closed == 1, cycle, "Closing/Closed each fired exactly once");
         Check(!window.IsVisible, cycle, "closed window is not visible");
+        var resetCountAfterClose = window.ResetInvocationsForTests;
+        Check(resetCountAfterClose >= 1, cycle, "closed window recorded reset handler invocation");
         return weak;
     }
 
@@ -118,6 +122,57 @@ static class F30Lifecycle
         return weak ?? throw new InvalidOperationException("No synthetic window was created.");
     }
 
+    // One Dispatcher stays alive for the entire series: model a WPF application's
+    // typical reuse of the UI thread. Pump its queue before and after GC while
+    // retaining ONLY weak window references.
+    private static void DrainDispatcher()
+    {
+        var dispatcher = Dispatcher.CurrentDispatcher;
+        for (var pass = 0; pass < 3; pass++)
+        {
+            var frame = new DispatcherFrame();
+            dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle,
+                new Action(() => frame.Continue = false));
+            Dispatcher.PushFrame(frame);
+        }
+    }
+
+    private static void CollectClosed()
+    {
+        DrainDispatcher();
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+        GC.WaitForPendingFinalizers();
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
+        DrainDispatcher();
+    }
+
+    private static void RunSharedDispatcher()
+    {
+        var dispatcher = Dispatcher.CurrentDispatcher;
+        var references = new List<WeakReference<OfflineWorkspaceWindow>>(Cycles);
+        CollectClosed();
+        long initialHeap = GC.GetTotalMemory(forceFullCollection: true);
+        long peakHeapGrowth = 0;
+        for (int i = 0; i < Cycles; i++)
+        {
+            references.Add(CreateExerciseClose(i));
+            if ((i + 1) % 8 != 0) continue;
+            CollectClosed();
+            int alive = references.Count(w => w.TryGetTarget(out _));
+            long heapDelta = GC.GetTotalMemory(forceFullCollection: true) - initialHeap;
+            peakHeapGrowth = Math.Max(peakHeapGrowth, heapDelta);
+            Console.WriteLine($"F30.2 SHARED checkpoint={i + 1} alive={alive} heapDeltaBytes={heapDelta}");
+            Check(alive <= 4, i, $"shared Dispatcher retained {alive} closed windows after checkpoint");
+            Check(heapDelta <= 64L * 1024 * 1024, i,
+                $"managed heap growth exceeded 64 MiB: {heapDelta}");
+            Check(!dispatcher.HasShutdownStarted, i, "shared Dispatcher remains alive during measurement");
+        }
+        CollectClosed();
+        int retained = references.Count(w => w.TryGetTarget(out _));
+        Check(retained <= 4, Cycles, $"shared Dispatcher retained {retained} windows after final collection");
+        Console.WriteLine($"F30.2 SHARED PASS: 48 windows, retained={retained}, peakHeapGrowthBytes={peakHeapGrowth}; same STA Dispatcher still active");
+    }
+
     [STAThread]
     private static void Main()
     {
@@ -134,6 +189,8 @@ static class F30Lifecycle
         }
         var retained = weakWindows.Count(w => w.TryGetTarget(out _));
         Check(retained <= 4, Cycles, "unexpected strong retention after 48 closed windows: retained=" + retained);
-        Console.WriteLine($"F30.2 WPF PASS: {Cycles} created/closed, {assertions} assertions; weak references retained={retained}; synthetic STA only");
+        Console.WriteLine($"F30.2 ISOLATED PASS: {Cycles} created/closed, retained={retained}");
+        RunSharedDispatcher();
+        Console.WriteLine($"F30.2 WPF PASS: {Cycles} isolated + {Cycles} shared created/closed, {assertions} assertions; synthetic STA only");
     }
 }
