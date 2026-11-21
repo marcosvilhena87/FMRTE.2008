@@ -53,7 +53,9 @@ public sealed class OfflinePlayerProfile
     {
         if (demonstrationId is null || demonstrationId.Length != 8 ||
             !demonstrationId.StartsWith("DEMO-", StringComparison.Ordinal) ||
-            demonstrationId.AsSpan(5).IndexOfAnyExceptInRange('0', '9') >= 0)
+            demonstrationId[5] is < '0' or > '9' ||
+            demonstrationId[6] is < '0' or > '9' ||
+            demonstrationId[7] is < '0' or > '9')
             throw new ArgumentException("Identidade fictícia deve seguir DEMO-NNN (três dígitos ASCII).", nameof(demonstrationId));
         if (string.IsNullOrWhiteSpace(displayName) || displayName.Length > 120)
             throw new ArgumentException("Nome inválido.", nameof(displayName));
