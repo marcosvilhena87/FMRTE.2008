@@ -6,12 +6,30 @@ on:
       - "tools/f30/**"
       - "docs/F30_4_*.md"
       - ".github/workflows/f30-4-evidence-consolidation.yml"
+      - "tests/FMRTE2008.OfflineRobustness.Windows/F30Stress.cs"
+      - "tests/FMRTE2008.OfflineLifecycle.Windows/Program.cs"
+      - "tests/FMRTE2008.OfflineNativeWindows/Program.cs"
+      - "docs/F30_1_OFFLINE_WPF_STRESS.md"
+      - "docs/F30_2_WPF_LIFECYCLE.md"
+      - "docs/F30_3_VISIBLE_WPF_RESOURCES.md"
+      - ".github/workflows/f29-offline-robustness.yml"
+      - ".github/workflows/f30-2-offline-wpf-lifecycle.yml"
+      - ".github/workflows/f30-3-offline-native-wpf.yml"
   pull_request:
     paths:
       - "evidence/f30/**"
       - "tools/f30/**"
       - "docs/F30_4_*.md"
       - ".github/workflows/f30-4-evidence-consolidation.yml"
+      - "tests/FMRTE2008.OfflineRobustness.Windows/F30Stress.cs"
+      - "tests/FMRTE2008.OfflineLifecycle.Windows/Program.cs"
+      - "tests/FMRTE2008.OfflineNativeWindows/Program.cs"
+      - "docs/F30_1_OFFLINE_WPF_STRESS.md"
+      - "docs/F30_2_WPF_LIFECYCLE.md"
+      - "docs/F30_3_VISIBLE_WPF_RESOURCES.md"
+      - ".github/workflows/f29-offline-robustness.yml"
+      - ".github/workflows/f30-2-offline-wpf-lifecycle.yml"
+      - ".github/workflows/f30-3-offline-native-wpf.yml"
 permissions:
   contents: read
 jobs:
