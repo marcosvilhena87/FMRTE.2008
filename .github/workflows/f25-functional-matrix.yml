@@ -1,0 +1,33 @@
+name: F25 functional reconstruction matrix
+on:
+  push:
+    paths:
+      - "tests/FMRTE2008.MemorySimulation/F25FunctionalReconstructionMatrix.json"
+      - "tests/FMRTE2008.MemorySimulation/test_f25_functional_matrix.py"
+      - ".github/workflows/f25-functional-matrix.yml"
+  pull_request:
+    paths:
+      - "tests/FMRTE2008.MemorySimulation/F25FunctionalReconstructionMatrix.json"
+      - "tests/FMRTE2008.MemorySimulation/test_f25_functional_matrix.py"
+      - ".github/workflows/f25-functional-matrix.yml"
+permissions:
+  contents: read
+jobs:
+  functional-matrix:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate offline matrix and adversarial mutations
+        run: python -m unittest discover -s tests/FMRTE2008.MemorySimulation -p test_f25_functional_matrix.py -v
+      - name: Confirm historical binary was not included
+        shell: python
+        run: |
+          from pathlib import Path
+          assert not any(p.name.lower()=="fmrte.exe" for p in Path(".").rglob("*") if p.is_file())
+          print("Historic binary absent; no execution")
