@@ -42,9 +42,25 @@ public sealed record OfflineRosterState(
 /// <summary>Navigation stays in an isolated, immutable synthetic snapshot.</summary>
 public sealed class OfflineRosterPresenter
 {
-    private readonly IReadOnlyList<OfflineExpandedPlayer> _all = new OfflineExpandedRoster().Snapshot();
+    private readonly IReadOnlyList<OfflineExpandedPlayer> _all;
     private IReadOnlyList<OfflineExpandedPlayer> _visible = Array.Empty<OfflineExpandedPlayer>();
     private int _index = -1;
+
+    public OfflineRosterPresenter() : this(OfflineRosterScenario.Baseline) { }
+
+    public OfflineRosterPresenter(OfflineRosterScenario scenario)
+    {
+        _all = scenario switch
+        {
+            OfflineRosterScenario.Baseline => new OfflineExpandedRoster().Snapshot(),
+            OfflineRosterScenario.CollisionStress => OfflineCollisionFixtures.Create(),
+            _ => throw new ArgumentOutOfRangeException(nameof(scenario))
+        };
+        if (_all.Select(p => p.Profile.DemonstrationId).Distinct(StringComparer.Ordinal).Count() != _all.Count)
+            throw new InvalidOperationException("Duplicate synthetic player IDs.");
+        if (_all.Any(p => !p.IsSynthetic || !p.Profile.IsSynthetic))
+            throw new InvalidOperationException("Non-synthetic profile rejected.");
+    }
 
     public OfflineRosterState Search(string? query)
     {
