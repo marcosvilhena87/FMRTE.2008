@@ -6,7 +6,7 @@
 - ZIP `FMRTE v1.0.0.5(1).zip` SHA-256: `491f15b1255fe135dfd5983520cb1a090b8edbd14511205a6f3b576b06a9c9cd`.
 - Membro `FMRTE v1.0.0.5/FMRTE.exe` SHA-256: `e7ba25394eb1f69fc73814a4cbe198a45a5681670f7472a07d9ba9f2a0b3fb07`.
 - Parser base: F25.2-R, esquema ECMA-335 e validação do tamanho de cada tabela.
-- Catálogo local reproduzível: 231129 bytes (JSON UTF-8); SHA-256 `f71527cf86d16caef9042c9c5773e3c69397a611988c2ea72445913e4cd3e02d`. O JSON completo é gerado localmente a partir do ZIP, **não é depositado como binário histórico nem dependência do CI**.
+- Catálogo local reproduzível: 231021 bytes (JSON UTF-8); SHA-256 `ced806e946e3d08fefd2a828ad8281769f425906393bc78dfd8c9cf70d4348d9`. O JSON completo é gerado localmente a partir do ZIP, **não é depositado como binário histórico nem dependência do CI**.
 
 ## Identificação observada
 - Assembly: **FMRTE**, versão **1.0.0.5**; token `0x20000001`.
