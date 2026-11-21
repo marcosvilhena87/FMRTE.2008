@@ -145,6 +145,19 @@ static class F30Stress
                         i, "singleton navigation clamped");
                     break;
             }
+            // Explicitly invalidate a selection while the filtered roster
+            // remains populated, then verify no stale dependent data survives.
+            grid.SelectedIndex = -1;
+            Check(grid.Items.Count > 0 && grid.SelectedItem is null &&
+                grid.SelectedIndex == -1, i, "invalid selection keeps roster but selects nobody");
+            Check(player.Text == "Nenhum jogador selecionado." &&
+                club.Text == "Nenhum clube selecionado." &&
+                city.Text == "" && contract.Text == "" && wage.Text == "" &&
+                members.Text == "" && technical.Items.Count == 0 &&
+                mental.Items.Count == 0 && physical.Items.Count == 0,
+                i, "invalid selection clears all dependent fields");
+            Check(!next.IsEnabled && !previous.IsEnabled && !clubButton.IsEnabled,
+                i, "invalid selection cannot navigate or open a club");
             query.Text = "F30-NO-MATCH";
             Click("SearchButton");
             Empty(i);
