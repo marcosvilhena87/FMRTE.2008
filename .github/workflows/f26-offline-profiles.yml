@@ -15,6 +15,7 @@ on:
     paths:
       - "src/FMRTE2008.Domain/OfflinePlayerProfile.cs"
       - "src/FMRTE2008.Application/OfflineProfileQueryService.cs"
+      - "src/FMRTE2008.Application/OfflineProfilesPresenter.cs"
       - "src/FMRTE2008.Desktop/OfflineProfilesWindow.xaml"
       - "src/FMRTE2008.Desktop/OfflineProfilesWindow.xaml.cs"
       - "src/FMRTE2008.Desktop/MainWindow.xaml"
