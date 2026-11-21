@@ -30,7 +30,7 @@ static class F28Tests
         Check(init.Mental.All(a => OfflineAttributeCategoryCatalog.Resolve(a.Name)==OfflineAttributeCategory.Mental), "mental detail");
         Check(init.Physical.All(a => OfflineAttributeCategoryCatalog.Resolve(a.Name)==OfflineAttributeCategory.Physical), "physical detail");
         Check(init.ClubPlayers.Count == 1 &&
-              init.ClubPlayers.All(p => p.Club.DemonstrationId == init.SelectedClub.DemonstrationId), "club members isolated");
+              init.ClubPlayers.All(p => p.Club.DemonstrationId == init.SelectedClub?.DemonstrationId), "club members isolated");
         Check(init.Roster.SelectedIndex == 0 && !init.Roster.HasPrevious && init.Roster.HasNext, "first boundary");
         var next = presenter.NextPlayer();
         Check(next.Roster.Selected?.Profile.DemonstrationId == "DEMO-002", "next player");
