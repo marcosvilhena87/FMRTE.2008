@@ -12,6 +12,7 @@ static class F30Lifecycle
 {
     private const int Cycles = 48;
     private static int assertions;
+    private static int postCloseCallbacks;
     private static void Check(bool value, int cycle, string label)
     {
         if (!value) throw new InvalidOperationException($"F30.2 cycle {cycle}: {label}");
@@ -25,7 +26,7 @@ static class F30Lifecycle
         Find<Button>(window, name).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static WeakReference<OfflineWorkspaceWindow> CreateExerciseClose(int cycle)
+    private static WeakReference<OfflineWorkspaceWindow> CreateExerciseClose(int cycle, bool shared = false)
     {
         var scenario = cycle % 2 == 0 ? OfflineRosterScenario.Baseline : OfflineRosterScenario.CollisionStress;
         var expected = scenario == OfflineRosterScenario.Baseline ? 3 : 6;
@@ -99,6 +100,22 @@ static class F30Lifecycle
         Check(!window.IsVisible, cycle, "closed window is not visible");
         var resetCountAfterClose = window.ResetInvocationsForTests;
         Check(resetCountAfterClose >= 1, cycle, "closed window recorded reset handler invocation");
+        if (shared)
+        {
+            // Queue a callback AFTER close. Capture only WeakReference and
+            // immutable counters, never a strong Window/Control reference.
+            Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background,
+                new Action(() =>
+                {
+                    if (weak.TryGetTarget(out var target))
+                    {
+                        Check(!target.IsVisible, cycle, "queued callback cannot re-show a closed window");
+                        Check(target.ResetInvocationsForTests == resetCountAfterClose,
+                            cycle, "queued callback must not invoke a closed window's reset handler");
+                    }
+                    postCloseCallbacks++;
+                }));
+        }
         return weak;
     }
 
@@ -155,7 +172,7 @@ static class F30Lifecycle
         long peakHeapGrowth = 0;
         for (int i = 0; i < Cycles; i++)
         {
-            references.Add(CreateExerciseClose(i));
+            references.Add(CreateExerciseClose(i, shared: true));
             if ((i + 1) % 8 != 0) continue;
             CollectClosed();
             int alive = references.Count(w => w.TryGetTarget(out _));
@@ -166,6 +183,8 @@ static class F30Lifecycle
             Check(heapDelta <= 64L * 1024 * 1024, i,
                 $"managed heap growth exceeded 64 MiB: {heapDelta}");
             Check(!dispatcher.HasShutdownStarted, i, "shared Dispatcher remains alive during measurement");
+            Check(postCloseCallbacks == i + 1, i,
+                "all weak-only post-close callbacks drained exactly once");
         }
         CollectClosed();
         int retained = references.Count(w => w.TryGetTarget(out _));
