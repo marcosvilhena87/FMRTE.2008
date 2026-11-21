@@ -20,3 +20,11 @@ O modo normal continua com os três perfis fictícios F26–F28. Um **cenário a
 
 ## Governança
 Sem alterações em `FM2008.mapping`, sem mapas de jogadores aprovados, acesso a memória, alteração de saves ou escrita operacional. Permanecem `NoApprovedPlayerMaps`, `approved=false`, `operational=false`, `approvedPlayerMaps=0`, `B03=PENDING-DECLARED`, `A12=GATE-BLOQUEADO`, `decision=NOT_MADE` e RA-01–RA-08 sem aceite. Este PR deverá permanecer Draft até revisão técnica independente.
+
+## F29-R — Remediação da revisão independente #6006393788
+
+- **R01 — recuperação sem recursão:** `RunSafely` não chama a si mesmo. Ao falhar uma ação, executa no máximo uma restauração. Se esta falhar, `ShowUnavailable` limpa os detalhes do jogador, clube, contrato, grades e filtro, desativa pesquisa/seleção/navegação e deixa somente **Mostrar todos** ativo para tentativa explícita posterior. Falhas inesperadas fora das exceções permitidas não são escondidas.
+- **R02 — reset protegido:** `Reset_Click` usa a mesma entrada `RunSafely` com `isReset: true`. Erro no próprio reset vai diretamente ao estado seguro sem segunda tentativa automática.
+- **Testes Windows adversariais:** falha sintética única com recuperação; falha do reset automático; falha persistente que atinge também uma tentativa manual; UI segura sem detalhes antigos; clique de navegação ignorado no estado indisponível; sucesso após tentativa manual subsequente; falha diretamente no handler `Reset_Click`. Os gatilhos sintéticos são `internal`, acessíveis apenas ao assembly de teste Windows explicitamente nomeado.
+- **Limite da prova:** os testes STA disparam eventos WPF em processo e não substituem automação visual da janela mostrada, teclado/mouse físicos ou testes de acessibilidade. O escopo permanece fechado e exclusivamente fictício.
+- **Governança:** preservar `NoApprovedPlayerMaps`, `approved=false`, `operational=false`, `approvedPlayerMaps=0`, `B03=PENDING-DECLARED`, `A12=GATE-BLOQUEADO`, `decision=NOT_MADE`, RA-01–RA-08 não aceitos; nenhum `fm.exe`, memória, save, fonte live ou escrita.
