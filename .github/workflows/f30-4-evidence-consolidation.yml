@@ -51,7 +51,7 @@ jobs:
       - name: Upload deterministic machine-readable SHA-256 report
         uses: actions/upload-artifact@v4
         with:
-          name: f30-offline-evidence-\${{ github.sha }}
-          path: \${{ runner.temp }}/f30-verification.json
+          name: f30-offline-evidence-${{ github.sha }}
+          path: ${{ runner.temp }}/f30-verification.json
           if-no-files-found: error
           retention-days: 30
