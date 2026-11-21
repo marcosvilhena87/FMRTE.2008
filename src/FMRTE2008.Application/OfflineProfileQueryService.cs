@@ -3,16 +3,8 @@ using FMRTE2008.Domain;
 namespace FMRTE2008.Application;
 
 /// <summary>F26: never accepts a live process source, PID or runtime mapping.</summary>
-public interface IOfflinePlayerProfileSource
+public sealed class DemonstrationProfileSource
 {
-    bool IsLiveProcessSource { get; }
-    IReadOnlyList<OfflinePlayerProfile> Snapshot();
-}
-
-public sealed class DemonstrationProfileSource : IOfflinePlayerProfileSource
-{
-    public bool IsLiveProcessSource => false;
-
     public IReadOnlyList<OfflinePlayerProfile> Snapshot() => Array.AsReadOnly(new[]
     {
         new OfflinePlayerProfile("DEMO-001", "Alex Exemplo", "Meio-campo",
@@ -41,17 +33,15 @@ public sealed class OfflineProfileQueryService
 {
     private readonly IReadOnlyList<OfflinePlayerProfile> _players;
 
-    public OfflineProfileQueryService(IOfflinePlayerProfileSource source)
+    // Closed boundary: no caller-supplied snapshot provider, callback, PID or handle.
+    public OfflineProfileQueryService()
     {
-        ArgumentNullException.ThrowIfNull(source);
-        if (source.IsLiveProcessSource)
-            throw new UnauthorizedAccessException("F26 não aceita processos reais.");
-        var snapshot = source.Snapshot() ?? throw new ArgumentException("Fonte sem snapshot.", nameof(source));
+        var snapshot = new DemonstrationProfileSource().Snapshot();
         if (snapshot.Count > 1000 || snapshot.Any(p => p is null || !p.IsSynthetic))
-            throw new ArgumentException("Snapshot sintético inválido.", nameof(source));
+            throw new InvalidOperationException("Snapshot de demonstração inválido.");
         var copy = snapshot.ToArray();
         if (copy.Select(p => p.DemonstrationId).Distinct(StringComparer.Ordinal).Count() != copy.Length)
-            throw new ArgumentException("IDs fictícios duplicados.", nameof(source));
+            throw new InvalidOperationException("IDs fictícios duplicados.");
         _players = Array.AsReadOnly(copy);
     }
 
