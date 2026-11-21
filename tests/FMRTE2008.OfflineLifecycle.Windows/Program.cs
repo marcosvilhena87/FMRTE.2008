@@ -1,3 +1,5 @@
+using System.Runtime.ExceptionServices;
+using System.Windows.Threading;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -96,12 +98,32 @@ static class F30Lifecycle
         return weak;
     }
 
+    // An independently terminated Dispatcher avoids falsely attributing
+    // thread-scoped WPF caches/queued callbacks to a window's lifetime.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference<OfflineWorkspaceWindow> RunIsolatedSta(int cycle)
+    {
+        WeakReference<OfflineWorkspaceWindow>? weak = null;
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try { weak = CreateExerciseClose(cycle); }
+            catch (Exception ex) { failure = ex; }
+            finally { Dispatcher.CurrentDispatcher.InvokeShutdown(); }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+        if (failure is not null) ExceptionDispatchInfo.Capture(failure).Throw();
+        return weak ?? throw new InvalidOperationException("No synthetic window was created.");
+    }
+
     [STAThread]
     private static void Main()
     {
         var weakWindows = new List<WeakReference<OfflineWorkspaceWindow>>(Cycles);
         for (var cycle = 0; cycle < Cycles; cycle++)
-            weakWindows.Add(CreateExerciseClose(cycle));
+            weakWindows.Add(RunIsolatedSta(cycle));
 
         // Collection is observed only after all local window references have
         // left their non-inlined frame; full GC does not prove native handle release.
