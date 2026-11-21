@@ -7,8 +7,7 @@ namespace FMRTE2008.Desktop;
 
 public partial class OfflineProfilesWindow : Window
 {
-    private readonly OfflineProfileQueryService _profiles =
-        new(new DemonstrationProfileSource());
+    private readonly OfflineProfilesPresenter _presenter = new();
 
     public OfflineProfilesWindow()
     {
@@ -20,14 +19,14 @@ public partial class OfflineProfilesWindow : Window
 
     private void RefreshResults()
     {
-        var results = _profiles.Search(SearchBox.Text);
+        var results = _presenter.Search(SearchBox.Text);
         ProfilesGrid.ItemsSource = results.Items;
         ProfilesGrid.SelectedIndex = results.Items.Count > 0 ? 0 : -1;
         if (results.Items.Count == 0) ShowDetails(null);
     }
 
     private void ProfilesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
-        ShowDetails(ProfilesGrid.SelectedItem as OfflinePlayerProfile);
+        ShowDetails(_presenter.Select((ProfilesGrid.SelectedItem as OfflinePlayerProfile)?.DemonstrationId));
 
     private void ShowDetails(OfflinePlayerProfile? player)
     {
